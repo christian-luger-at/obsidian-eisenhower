@@ -19,7 +19,7 @@ interface Translations {
 
 const translations: Record<Lang, Translations> = {
 	en: {
-		ribbon: { tooltip: 'Eisenhower matrix' },
+		ribbon: { tooltip: 'Focus first' },
 		notice: { clicked: 'This is a notice!' },
 		statusBar: { text: 'Status bar text' },
 		commands: {
@@ -40,7 +40,7 @@ const translations: Record<Lang, Translations> = {
 		},
 	},
 	de: {
-		ribbon: { tooltip: 'Eisenhower-Matrix' },
+		ribbon: { tooltip: 'Focus First' },
 		notice: { clicked: 'Das ist eine Benachrichtigung!' },
 		statusBar: { text: 'Statusleisten-Text' },
 		commands: {

@@ -1,19 +1,19 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import EisenhowerPlugin from './main';
+import FokusFirstPlugin from './main';
 import { t } from './i18n';
 
-export interface EisenhowerSettings {
+export interface FokusFirstSettings {
 	mySetting: string;
 }
 
-export const DEFAULT_SETTINGS: EisenhowerSettings = {
+export const DEFAULT_SETTINGS: FokusFirstSettings = {
 	mySetting: 'default',
 };
 
-export class EisenhowerSettingTab extends PluginSettingTab {
-	plugin: EisenhowerPlugin;
+export class FokusFirstSettingTab extends PluginSettingTab {
+	plugin: FokusFirstPlugin;
 
-	constructor(app: App, plugin: EisenhowerPlugin) {
+	constructor(app: App, plugin: FokusFirstPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

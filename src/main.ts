@@ -8,13 +8,13 @@ import {
 } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
-	EisenhowerSettingTab,
-	EisenhowerSettings,
+	FokusFirstSettingTab,
+	FokusFirstSettings,
 } from './settings';
 import { t } from './i18n';
 
-export default class EisenhowerPlugin extends Plugin {
-	settings!: EisenhowerSettings;
+export default class FocusFirstPlugin extends Plugin {
+	settings!: FokusFirstSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -33,7 +33,7 @@ export default class EisenhowerPlugin extends Plugin {
 			id: 'open-modal-simple',
 			name: t().commands.openModalSimple.name,
 			callback: () => {
-				new EisenhowerModal(this.app).open();
+				new FokusFirstModal(this.app).open();
 			},
 		});
 		// This adds an editor command that can perform some operation on the current editor instance
@@ -59,7 +59,7 @@ export default class EisenhowerPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new EisenhowerModal(this.app).open();
+						new FokusFirstModal(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -70,7 +70,7 @@ export default class EisenhowerPlugin extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new EisenhowerSettingTab(this.app, this));
+		this.addSettingTab(new FokusFirstSettingTab(this.app, this));
 
 	}
 
@@ -80,7 +80,7 @@ export default class EisenhowerPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<EisenhowerSettings>,
+			(await this.loadData()) as Partial<FokusFirstSettings>,
 		);
 	}
 
@@ -89,7 +89,7 @@ export default class EisenhowerPlugin extends Plugin {
 	}
 }
 
-class EisenhowerModal extends Modal {
+class FokusFirstModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.setText(t().modal.content);
