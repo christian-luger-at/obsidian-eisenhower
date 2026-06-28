@@ -302,6 +302,7 @@ describe('loadSettings — merges persisted data with defaults', () => {
 				eliminate:{ tag: '#eliminate',color: '#868e96', sort: { primary: 'priority', secondary: 'alpha'    } },
 			},
 			groupByPrimary: false,
+			focusTag: '#focus',
 		};
 		const merged = Object.assign({}, DEFAULT_SETTINGS, persisted);
 

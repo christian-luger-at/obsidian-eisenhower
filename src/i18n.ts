@@ -23,6 +23,11 @@ interface Translations {
 		open: string;
 		done: string;
 		empty: string;
+		filterToggle: string;
+		focusSectionTitle: string;
+		focusAdd: string;
+		focusRemove: string;
+		focusDone: string;
 		quadrants: {
 			do: { title: string; subtitle: string };
 			schedule: { title: string; subtitle: string };
@@ -48,13 +53,15 @@ interface Translations {
 		matrixHeading: string;
 		urgencyDays: { name: string; desc: string; error: string };
 		importantPriorities: { name: string; desc: string; error: string };
+		focusHeading: string;
+		focusTag: { name: string; desc: string };
+		matrixDesc: string;
 		quadrantsHeading: string;
-		quadrantTagsDesc: string;
-		quadrantColor: string;
-		quadrantTag: string;
+		quadrantColor: { name: string; desc: string };
+		quadrantTag: { name: string; desc: string };
 		groupByPrimary: { name: string; desc: string };
-		sortPrimary: string;
-		sortSecondary: string;
+		sortPrimary: { name: string; desc: string };
+		sortSecondary: { name: string; desc: string };
 		sortField: { priority: string; dueDate: string; alpha: string };
 	};
 	groups: {
@@ -93,6 +100,11 @@ const translations: Record<Lang, Translations> = {
 			open: 'open',
 			done: 'done',
 			empty: 'No open tasks found.',
+			filterToggle: 'More Filters',
+			focusSectionTitle: 'Focus Tasks',
+			focusAdd: 'Add to focus',
+			focusRemove: 'Remove from focus',
+			focusDone: 'Mark as done',
 			quadrants: {
 				do:       { title: 'Do',       subtitle: 'Urgent · Important' },
 				schedule: { title: 'Schedule', subtitle: 'Not urgent · Important' },
@@ -130,16 +142,33 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Tasks carrying any of the selected priority levels are placed in the "Important" axis of the matrix. Select at least one.',
 				error: 'At least one priority must be selected.',
 			},
+			focusHeading: 'Focus Task',
+			focusTag: {
+				name: 'Focus tag',
+				desc: 'Add this tag to any task to highlight it as a Focus Task. Focus Tasks are displayed prominently above the matrix.',
+			},
+			matrixDesc: 'These rules determine how tasks are automatically placed into quadrants based on their due date and priority.',
 			quadrantsHeading: 'Quadrants',
-			quadrantTagsDesc: 'Add one of these tags to any task to pin it to a specific quadrant, overriding the automatic classification.',
-			quadrantColor: 'Color',
-			quadrantTag: 'Tag (manual override)',
+			quadrantColor: {
+				name: 'Color',
+				desc: 'Accent color shown at the top border of the quadrant.',
+			},
+			quadrantTag: {
+				name: 'Tag (manual override)',
+				desc: 'Add this tag to any task to pin it to this quadrant, overriding the automatic classification.',
+			},
 			groupByPrimary: {
 				name: 'Group by primary criterion',
 				desc: 'When enabled, tasks in each quadrant are visually grouped by their primary sort field.',
 			},
-			sortPrimary: 'Primary sort',
-			sortSecondary: 'Secondary sort',
+			sortPrimary: {
+				name: 'Primary sort',
+				desc: 'Main criterion used to order tasks within the quadrant.',
+			},
+			sortSecondary: {
+				name: 'Secondary sort',
+				desc: 'Tiebreaker applied when the primary criterion is equal.',
+			},
 			sortField: { priority: 'Priority', dueDate: 'Due date', alpha: 'Alphabetical' },
 		},
 		groups: {
@@ -176,6 +205,11 @@ const translations: Record<Lang, Translations> = {
 			open: 'offen',
 			done: 'erledigt',
 			empty: 'Keine offenen Aufgaben gefunden.',
+			filterToggle: 'Mehr Filter',
+			focusSectionTitle: 'Fokus-Aufgaben',
+			focusAdd: 'Zu Fokus hinzufügen',
+			focusRemove: 'Aus Fokus entfernen',
+			focusDone: 'Als erledigt markieren',
 			quadrants: {
 				do:       { title: 'Erledigen',  subtitle: 'Dringend · Wichtig' },
 				schedule: { title: 'Einplanen',  subtitle: 'Nicht dringend · Wichtig' },
@@ -213,16 +247,33 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Aufgaben mit einer der gewählten Prioritätsstufen werden auf der „Wichtig"-Achse der Matrix eingeordnet. Mindestens eine Priorität muss ausgewählt sein.',
 				error: 'Es muss mindestens eine Priorität ausgewählt sein.',
 			},
+			focusHeading: 'Fokus-Aufgabe',
+			focusTag: {
+				name: 'Fokus-Tag',
+				desc: 'Füge diesen Tag einer Aufgabe hinzu, um sie als Fokus-Aufgabe hervorzuheben. Fokus-Aufgaben werden prominent über der Matrix angezeigt.',
+			},
+			matrixDesc: 'Diese Regeln bestimmen, wie Aufgaben anhand von Fälligkeitsdatum und Priorität automatisch in Quadranten eingeordnet werden.',
 			quadrantsHeading: 'Quadranten',
-			quadrantTagsDesc: 'Füge einer Aufgabe einen dieser Tags hinzu, um sie einem bestimmten Quadranten zuzuweisen. Dieser Tag überschreibt die automatische Klassifizierung.',
-			quadrantColor: 'Farbe',
-			quadrantTag: 'Tag (manuelle Zuweisung)',
+			quadrantColor: {
+				name: 'Farbe',
+				desc: 'Akzentfarbe des oberen Rahmens im Quadranten.',
+			},
+			quadrantTag: {
+				name: 'Tag (manuelle Zuweisung)',
+				desc: 'Füge diesen Tag einer Aufgabe hinzu, um sie diesem Quadranten zuzuweisen und die automatische Klassifizierung zu überschreiben.',
+			},
 			groupByPrimary: {
 				name: 'Nach erstem Kriterium gruppieren',
 				desc: 'Wenn aktiviert, werden Aufgaben in jedem Quadranten nach dem primären Sortierfeld visuell gruppiert.',
 			},
-			sortPrimary: 'Primäre Sortierung',
-			sortSecondary: 'Sekundäre Sortierung',
+			sortPrimary: {
+				name: 'Primäre Sortierung',
+				desc: 'Hauptkriterium für die Reihenfolge der Aufgaben im Quadranten.',
+			},
+			sortSecondary: {
+				name: 'Sekundäre Sortierung',
+				desc: 'Tiebreaker, der angewendet wird, wenn das primäre Kriterium gleich ist.',
+			},
 			sortField: { priority: 'Priorität', dueDate: 'Fälligkeitsdatum', alpha: 'Alphabetisch' },
 		},
 		groups: {

@@ -43,6 +43,7 @@ export interface FokusFirstSettings {
 	importantPriorities: Priority[];
 	quadrants: QuadrantConfig;
 	groupByPrimary: boolean;
+	focusTag: string;
 }
 
 export const DEFAULT_SETTINGS: FokusFirstSettings = {
@@ -58,6 +59,7 @@ export const DEFAULT_SETTINGS: FokusFirstSettings = {
 		eliminate:{ tag: '#eliminate',color: '#868e96', sort: { primary: 'priority', secondary: 'alpha'    } },
 	},
 	groupByPrimary: false,
+	focusTag: '#focus',
 };
 
 class FolderSuggest extends AbstractInputSuggest<TFolder> {
@@ -145,9 +147,29 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 			folderSetting.settingEl.after(folderErrorEl);
 		}
 
+		// --- Focus task ---
+
+		new Setting(containerEl).setName(t().settings.focusHeading).setHeading();
+
+		new Setting(containerEl)
+			.setName(t().settings.focusTag.name)
+			.setDesc(t().settings.focusTag.desc)
+			.addText((text) =>
+				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
+					.setPlaceholder('#focus')
+					.setValue(this.plugin.settings.focusTag)
+					.onChange(async (value) => {
+						this.plugin.settings.focusTag = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
+
 		// --- Eisenhower matrix rules ---
 
 		new Setting(containerEl).setName(t().settings.matrixHeading).setHeading();
+
+		containerEl.createEl('p', { text: t().settings.matrixDesc, cls: 'focus-first-setting-hint' });
 
 		const urgencySetting = new Setting(containerEl)
 			.setName(t().settings.urgencyDays.name)
@@ -222,11 +244,6 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl).setName(t().settings.quadrantsHeading).setHeading();
 
-		containerEl.createEl('p', {
-			text: t().settings.quadrantTagsDesc,
-			cls: 'focus-first-setting-hint',
-		});
-
 		new Setting(containerEl)
 			.setName(t().settings.groupByPrimary.name)
 			.setDesc(t().settings.groupByPrimary.desc)
@@ -255,10 +272,13 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 		for (const def of quadrantDefs) {
 			const q = this.plugin.settings.quadrants[def.key];
 
-			new Setting(containerEl).setName(def.label).setHeading();
+			new Setting(containerEl)
+				.setName(`${def.label} — ${t().view.quadrants[def.key].subtitle}`)
+				.setHeading();
 
 			new Setting(containerEl)
-				.setName(t().settings.quadrantColor)
+				.setName(t().settings.quadrantColor.name)
+				.setDesc(t().settings.quadrantColor.desc)
 				.addText((text) => {
 					text.inputEl.type = 'color';
 					text.inputEl.value = q.color;
@@ -270,7 +290,8 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 				});
 
 			new Setting(containerEl)
-				.setName(t().settings.quadrantTag)
+				.setName(t().settings.quadrantTag.name)
+				.setDesc(t().settings.quadrantTag.desc)
 				.addText((text) =>
 					text
 						.setPlaceholder(`#${def.key}`)
@@ -282,7 +303,8 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 				);
 
 			new Setting(containerEl)
-				.setName(t().settings.sortPrimary)
+				.setName(t().settings.sortPrimary.name)
+				.setDesc(t().settings.sortPrimary.desc)
 				.addDropdown((drop) => {
 					for (const [value, label] of Object.entries(sortFieldOptions)) {
 						drop.addOption(value, label);
@@ -296,7 +318,8 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 				});
 
 			new Setting(containerEl)
-				.setName(t().settings.sortSecondary)
+				.setName(t().settings.sortSecondary.name)
+				.setDesc(t().settings.sortSecondary.desc)
 				.addDropdown((drop) => {
 					for (const [value, label] of Object.entries(sortFieldOptions)) {
 						drop.addOption(value, label);

@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, TFile, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Menu, setIcon, debounce } from 'obsidian';
 import FocusFirstPlugin from './main';
 import { scanTasks, TaskItem } from './taskScanner';
 import { classifyTasks, MatrixTask, Quadrant } from './matrixClassifier';
@@ -9,10 +9,16 @@ export const FOCUS_FIRST_VIEW_TYPE = 'focus-first-view';
 
 const QUADRANT_ORDER: Quadrant[] = ['do', 'schedule', 'delegate', 'eliminate'];
 
+type DateBucket = '__overdue__' | '__today__' | '__thisweek__' | '__upcoming__' | '__nodate__';
+
+const DATE_FILTER_OPTIONS: DateBucket[] = ['__overdue__', '__today__', '__thisweek__', '__upcoming__', '__nodate__'];
+
 export class FocusFirstView extends ItemView {
 	private plugin: FocusFirstPlugin;
 	private tasks: TaskItem[] = [];
 	private searchQuery = '';
+	private activeDateFilters = new Set<DateBucket>();
+	private filtersVisible = false;
 	private debouncedRefresh = debounce(() => this.refresh(), 500, true);
 
 	constructor(leaf: WorkspaceLeaf, plugin: FocusFirstPlugin) {
@@ -33,6 +39,7 @@ export class FocusFirstView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
+		this.contentEl.addClass('focus-first-view');
 		this.registerEvent(
 			this.app.metadataCache.on('changed', (_file: TFile) => {
 				this.debouncedRefresh();
@@ -55,7 +62,9 @@ export class FocusFirstView extends ItemView {
 		const refreshBtn = header.createEl('button', { text: t().view.refresh, cls: 'focus-first-refresh-btn' });
 		refreshBtn.addEventListener('click', () => { void this.refresh(); });
 
-		const searchBar = contentEl.createDiv({ cls: 'focus-first-search-bar' });
+		// Search area groups search input + filter panel visually
+		const searchArea = contentEl.createDiv({ cls: 'focus-first-search-area' });
+		const searchBar = searchArea.createDiv({ cls: 'focus-first-search-bar' });
 		const searchInput = searchBar.createEl('input', {
 			cls: 'focus-first-search-input',
 			attr: {
@@ -64,13 +73,160 @@ export class FocusFirstView extends ItemView {
 				value: this.searchQuery,
 			},
 		});
-		searchInput.addEventListener('input', () => {
-			this.searchQuery = searchInput.value;
+		const filterToggle = searchBar.createEl('button', {
+			cls: `focus-first-filter-toggle${this.filtersVisible ? ' is-open' : ''}`,
+		});
+		filterToggle.setAttribute('aria-label', String(t().view.filterToggle));
+		filterToggle.setAttribute('title', String(t().view.filterToggle));
+		const updateFilterToggle = () => {
+			filterToggle.empty();
+			setIcon(filterToggle, 'sliders-horizontal');
+			if (this.activeDateFilters.size > 0) {
+				filterToggle.createEl('span', {
+					text: String(this.activeDateFilters.size),
+					cls: 'focus-first-filter-badge',
+				});
+			}
+			filterToggle.classList.toggle('has-active', this.activeDateFilters.size > 0);
+		};
+		updateFilterToggle();
+
+		const filterPanel = searchArea.createDiv({
+			cls: `focus-first-filter-panel${this.filtersVisible ? '' : ' focus-first-hidden'}`,
+		});
+
+		// Declare containers before closures reference them
+		const focusContainer = contentEl.createDiv({ cls: 'focus-first-focus-container' });
+		const matrixContainer = contentEl.createDiv({ cls: 'focus-first-matrix-container' });
+
+		this.renderFilterPanel(filterPanel, () => {
+			updateFilterToggle();
+			this.renderFocusTasks(focusContainer);
 			this.renderMatrix(contentEl, matrixContainer);
 		});
 
-		const matrixContainer = contentEl.createDiv({ cls: 'focus-first-matrix-container' });
+		filterToggle.addEventListener('click', () => {
+			this.filtersVisible = !this.filtersVisible;
+			filterPanel.classList.toggle('focus-first-hidden', !this.filtersVisible);
+			filterToggle.classList.toggle('is-open', this.filtersVisible);
+		});
+
+		searchInput.addEventListener('input', () => {
+			this.searchQuery = searchInput.value;
+			this.renderFocusTasks(focusContainer);
+			this.renderMatrix(contentEl, matrixContainer);
+		});
+
+		this.renderFocusTasks(focusContainer);
 		this.renderMatrix(contentEl, matrixContainer);
+	}
+
+	private renderFilterPanel(panel: HTMLElement, onChange: () => void): void {
+		panel.empty();
+		const g = t().groups;
+		const labels: Record<DateBucket, string> = {
+			__overdue__:  g.overdue,
+			__today__:    g.today,
+			__thisweek__: g.thisWeek,
+			__upcoming__: g.upcoming,
+			__nodate__:   g.noDate,
+		};
+		for (const bucket of DATE_FILTER_OPTIONS) {
+			const label = panel.createEl('label', { cls: 'focus-first-filter-option' });
+			const cb = label.createEl('input');
+			cb.type = 'checkbox';
+			cb.checked = this.activeDateFilters.has(bucket);
+			label.createEl('span', { text: labels[bucket] });
+			cb.addEventListener('change', () => {
+				if (cb.checked) this.activeDateFilters.add(bucket);
+				else this.activeDateFilters.delete(bucket);
+				onChange();
+			});
+		}
+	}
+
+	private dueBucket(task: TaskItem): string {
+		if (!task.dueDate) return '__nodate__';
+		const today = new Date(); today.setHours(0, 0, 0, 0);
+		const due = new Date(task.dueDate); due.setHours(0, 0, 0, 0);
+		const diff = Math.floor((due.getTime() - today.getTime()) / 86400000);
+		const dow = today.getDay();
+		const daysToSunday = dow === 0 ? 0 : 7 - dow;
+		if (diff < 0) return '__overdue__';
+		if (diff === 0) return '__today__';
+		if (diff <= daysToSunday) return '__thisweek__';
+		if (diff <= 14) return '__upcoming__';
+		return '__later__';
+	}
+
+	private passesDateFilter(task: TaskItem): boolean {
+		if (this.activeDateFilters.size === 0) return true;
+		return this.activeDateFilters.has(this.dueBucket(task) as DateBucket);
+	}
+
+	private renderFocusTasks(container: HTMLElement): void {
+		container.empty();
+		const focusTag = this.plugin.settings.focusTag.trim().toLowerCase();
+		if (!focusTag) { container.classList.add('focus-first-hidden'); return; }
+
+		const focusTasks = this.tasks.filter(
+			(t) => !t.completed && t.tags.some((tag) => tag.toLowerCase() === focusTag),
+		);
+
+		if (focusTasks.length === 0) { container.classList.add('focus-first-hidden'); return; }
+		container.classList.remove('focus-first-hidden');
+
+		const header = container.createDiv({ cls: 'focus-first-focus-header' });
+		header.createEl('span', { text: String(t().view.focusSectionTitle), cls: 'focus-first-focus-title' });
+
+		const list = container.createEl('ul', { cls: 'focus-first-focus-list' });
+		for (const task of focusTasks) {
+			const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').trim();
+			const li = list.createEl('li', { cls: 'focus-first-focus-item' });
+			li.createEl('span', { text, cls: 'focus-first-focus-item-text' });
+			const actions = li.createDiv({ cls: 'focus-first-focus-actions' });
+			const doneBtn = actions.createEl('button', { cls: 'focus-first-focus-done', text: '✓' });
+			doneBtn.setAttribute('aria-label', String(t().view.focusDone));
+			doneBtn.setAttribute('title', String(t().view.focusDone));
+			doneBtn.addEventListener('click', () => {
+				void this.completeTask(task.file.path, task.lineNumber);
+			});
+			const removeBtn = actions.createEl('button', { cls: 'focus-first-focus-remove', text: '✕' });
+			removeBtn.setAttribute('aria-label', String(t().view.focusRemove));
+			removeBtn.setAttribute('title', String(t().view.focusRemove));
+			removeBtn.addEventListener('click', () => {
+				void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, false);
+			});
+		}
+	}
+
+	private async toggleFocusTag(filePath: string, lineNumber: number, focusTag: string, add: boolean): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) return;
+		const content = await this.app.vault.read(file);
+		const lines = content.split('\n');
+		const line = lines[lineNumber];
+		if (line === undefined) return;
+		if (add) {
+			lines[lineNumber] = line.trimEnd() + ' ' + this.plugin.settings.focusTag;
+		} else {
+			lines[lineNumber] = line
+				.split(/\s+/)
+				.filter((token) => token.toLowerCase() !== focusTag)
+				.join(' ');
+		}
+		await this.app.vault.modify(file, lines.join('\n'));
+	}
+
+	private async completeTask(filePath: string, lineNumber: number): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) return;
+		const content = await this.app.vault.read(file);
+		const lines = content.split('\n');
+		const line = lines[lineNumber];
+		if (line === undefined) return;
+		lines[lineNumber] = line.replace(/\[\s\]/, '[x]');
+		await this.app.vault.modify(file, lines.join('\n'));
 	}
 
 	private renderMatrix(contentEl: HTMLElement, container: HTMLElement): void {
@@ -83,7 +239,8 @@ export class FocusFirstView extends ItemView {
 				if (!query) return true;
 				const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').toLowerCase();
 				return text.includes(query) || task.file.basename.toLowerCase().includes(query);
-			});
+			})
+			.filter((task) => this.passesDateFilter(task));
 
 		if (open.length === 0) {
 			container.createEl('p', { text: t().view.empty, cls: 'focus-first-empty' });
@@ -134,10 +291,36 @@ export class FocusFirstView extends ItemView {
 	}
 
 	private renderTask(parent: HTMLElement, task: MatrixTask): void {
-		const li = parent.createEl('li', { cls: 'focus-first-task-item' });
+		const focusTag = this.plugin.settings.focusTag.trim().toLowerCase();
+		const isFocused = focusTag
+			? task.tags.some((tag) => tag.toLowerCase() === focusTag)
+			: false;
+		const li = parent.createEl('li', { cls: `focus-first-task-item${isFocused ? ' is-focused' : ''}` });
 		this.makeDraggable(li, task);
 
 		const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').replace(/(🔺|⏫|🔼|🔽|⏬)\s*/g, '').replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+
+		li.addEventListener('contextmenu', (e) => {
+			const menu = new Menu();
+			if (focusTag) {
+				const labelRemove = String(t().view.focusRemove);
+				const labelAdd = String(t().view.focusAdd);
+				if (isFocused) {
+					menu.addItem((item) =>
+						item.setTitle(labelRemove).setIcon('star-off').onClick(() => {
+							void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, false);
+						}),
+					);
+				} else {
+					menu.addItem((item) =>
+						item.setTitle(labelAdd).setIcon('star').onClick(() => {
+							void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, true);
+						}),
+					);
+				}
+			}
+			menu.showAtMouseEvent(e);
+		});
 
 		const info = li.createDiv({ cls: 'focus-first-task-info' });
 		const titleEl = info.createEl('span', { text, cls: 'focus-first-task-text' });
@@ -307,8 +490,9 @@ export class FocusFirstView extends ItemView {
 		const line = lines[lineNumber];
 		if (line === undefined) return;
 
-		const quadrantTags = Object.values(this.plugin.settings.quadrants)
-			.map((q) => q.tag.trim())
+		const { quadrants } = this.plugin.settings;
+		const quadrantTags = (['do', 'schedule', 'delegate', 'eliminate'] as const)
+			.map((key) => quadrants[key].tag.trim())
 			.filter(Boolean);
 
 		let newLine = line;

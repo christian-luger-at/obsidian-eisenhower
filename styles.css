@@ -6,6 +6,7 @@
 	justify-content: space-between;
 	padding: var(--size-4-3) var(--size-4-4);
 	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
 }
 
 .focus-first-header h4 {
@@ -13,15 +14,34 @@
 	font-size: var(--font-ui-large);
 }
 
+.focus-first-refresh-btn {
+	cursor: pointer;
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: var(--size-2-2) var(--size-4-2);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.focus-first-refresh-btn:hover {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
 /* ── Search bar ──────────────────────────────────────────── */
 
 .focus-first-search-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
 	padding: var(--size-4-2) var(--size-4-4);
-	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
 }
 
 .focus-first-search-input {
-	width: 100%;
+	flex: 1;
+	min-width: 0;
 	background: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
@@ -36,16 +56,193 @@
 	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 }
 
+.focus-first-filter-toggle {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	background: none;
+	border: none;
+	padding: var(--size-2-1);
+	color: var(--text-faint);
+	cursor: pointer;
+}
+
+.focus-first-filter-toggle svg {
+	width: 15px;
+	height: 15px;
+}
+
+.focus-first-filter-toggle:hover {
+	color: var(--text-muted);
+}
+
+.focus-first-filter-toggle.is-open,
+.focus-first-filter-toggle.has-active {
+	color: var(--interactive-accent);
+}
+
+.focus-first-filter-badge {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-radius: 999px;
+	font-size: 0.75em;
+	padding: 0 5px;
+	line-height: 1.5;
+}
+
+/* ── Filter panel ────────────────────────────────────────── */
+
+.focus-first-filter-panel {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+	padding: 0 var(--size-4-4) var(--size-4-2);
+}
+
+.focus-first-filter-panel.focus-first-hidden {
+	display: none;
+}
+
+.focus-first-filter-option {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+
+.focus-first-filter-option input[type="checkbox"] {
+	cursor: pointer;
+	accent-color: var(--interactive-accent);
+}
+
 .focus-first-empty {
 	text-align: center;
 	color: var(--text-muted);
 	padding: var(--size-4-8);
 }
 
+/* ── View layout ─────────────────────────────────────────── */
+
+.focus-first-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+}
+
+/* ── Search area ─────────────────────────────────────────── */
+
+.focus-first-search-area {
+	background: var(--background-secondary);
+	flex-shrink: 0;
+}
+
+/* ── Focus tasks section ─────────────────────────────────── */
+
+.focus-first-focus-container {
+	padding: var(--size-4-6) var(--size-4-4);
+	background: var(--background-secondary);
+	flex-shrink: 0;
+}
+
+.focus-first-focus-container.focus-first-hidden {
+	display: none;
+}
+
+.focus-first-focus-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-2);
+}
+
+.focus-first-focus-title {
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.focus-first-focus-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+}
+
+.focus-first-focus-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-4-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+}
+
+.focus-first-focus-item-text {
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.focus-first-focus-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	flex-shrink: 0;
+}
+
+.focus-first-focus-done,
+.focus-first-focus-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 2px var(--size-4-1);
+	font-size: var(--font-ui-small);
+	line-height: 1;
+	border-radius: var(--radius-s);
+}
+
+.focus-first-focus-done {
+	color: var(--color-green);
+}
+
+.focus-first-focus-done:hover {
+	background: var(--background-modifier-success);
+}
+
+.focus-first-focus-remove {
+	color: var(--text-muted);
+}
+
+.focus-first-focus-remove:hover {
+	color: var(--text-error);
+	background: var(--background-modifier-error);
+}
+
+/* ── Focus indicator on matrix task items ────────────────── */
+
+.focus-first-task-item.is-focused {
+	border-left: 2px solid var(--interactive-accent);
+	padding-left: calc(var(--size-4-2) - 2px);
+}
+
 /* ── Matrix container ────────────────────────────────────── */
 
 .focus-first-matrix-container {
-	height: calc(100% - 88px);
+	flex: 1;
 	overflow: hidden;
 	padding: var(--size-4-3);
 	box-sizing: border-box;
@@ -57,7 +254,7 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	grid-template-rows: 1fr 1fr;
-	gap: var(--size-4-2);
+	gap: var(--size-4-4);
 	height: 100%;
 	overflow: hidden;
 }
@@ -125,6 +322,7 @@
 }
 
 .focus-first-task-item {
+	position: relative;
 	padding: var(--size-2-1) var(--size-4-2);
 	border-bottom: 1px solid var(--background-modifier-border-hover);
 }
