@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-eisenhower-plugin",
+	"name": "focus-first-matrix",
 	"version": "0.0.1",
-	"description": "Obsidian Eisenhower Plugin",
+	"description": "Focus First — prioritize work with the Eisenhower matrix.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
