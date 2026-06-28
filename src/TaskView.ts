@@ -1,13 +1,17 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, TFile, debounce } from 'obsidian';
 import FocusFirstPlugin from './main';
 import { scanTasks, TaskItem } from './taskScanner';
+import { classifyTasks, MatrixTask, Quadrant } from './matrixClassifier';
 import { t } from './i18n';
 
 export const FOCUS_FIRST_VIEW_TYPE = 'focus-first-view';
 
+const QUADRANT_ORDER: Quadrant[] = ['do', 'schedule', 'delegate', 'eliminate'];
+
 export class FocusFirstView extends ItemView {
 	private plugin: FocusFirstPlugin;
 	private tasks: TaskItem[] = [];
+	private searchQuery = '';
 	private debouncedRefresh = debounce(() => this.refresh(), 500, true);
 
 	constructor(leaf: WorkspaceLeaf, plugin: FocusFirstPlugin) {
@@ -47,43 +51,88 @@ export class FocusFirstView extends ItemView {
 
 		const header = contentEl.createDiv({ cls: 'focus-first-header' });
 		header.createEl('h4', { text: t().view.title });
-
-		const refreshBtn = header.createEl('button', { text: t().view.refresh });
+		const refreshBtn = header.createEl('button', { text: t().view.refresh, cls: 'focus-first-refresh-btn' });
 		refreshBtn.addEventListener('click', () => { void this.refresh(); });
 
-		const open = this.tasks.filter((t) => !t.completed);
-		const done = this.tasks.filter((t) => t.completed);
-
-		const scope =
-			this.plugin.settings.taskScope === 'folder' && this.plugin.settings.taskFolder
-				? this.plugin.settings.taskFolder
-				: t().view.scopeAll;
-
-		contentEl.createEl('p', {
-			text: `${t().view.scope}: ${scope} · ${open.length} ${t().view.open}, ${done.length} ${t().view.done}`,
-			cls: 'focus-first-meta',
+		const searchBar = contentEl.createDiv({ cls: 'focus-first-search-bar' });
+		const searchInput = searchBar.createEl('input', {
+			cls: 'focus-first-search-input',
+			attr: {
+				type: 'text',
+				placeholder: t().view.searchPlaceholder,
+				value: this.searchQuery,
+			},
+		});
+		searchInput.addEventListener('input', () => {
+			this.searchQuery = searchInput.value;
+			this.renderMatrix(contentEl, matrixContainer);
 		});
 
+		const matrixContainer = contentEl.createDiv({ cls: 'focus-first-matrix-container' });
+		this.renderMatrix(contentEl, matrixContainer);
+	}
+
+	private renderMatrix(contentEl: HTMLElement, container: HTMLElement): void {
+		container.empty();
+
+		const query = this.searchQuery.toLowerCase();
+		const open = this.tasks
+			.filter((task) => !task.completed)
+			.filter((task) => {
+				if (!query) return true;
+				const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').toLowerCase();
+				return text.includes(query) || task.file.basename.toLowerCase().includes(query);
+			});
+
 		if (open.length === 0) {
-			contentEl.createEl('p', { text: t().view.empty, cls: 'focus-first-empty' });
+			container.createEl('p', { text: t().view.empty, cls: 'focus-first-empty' });
 			return;
 		}
 
-		const list = contentEl.createEl('ul', { cls: 'focus-first-task-list' });
+		const quadrants = classifyTasks(open, this.plugin.settings);
+		const matrix = container.createDiv({ cls: 'focus-first-matrix' });
 
-		for (const task of open) {
-			const li = list.createEl('li', { cls: 'focus-first-task-item' });
+		for (const key of QUADRANT_ORDER) {
+			const tasks = quadrants[key];
+			const quadrant = t().view.quadrants[key];
 
-			const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '');
+			const cell = matrix.createDiv({ cls: `focus-first-quadrant focus-first-quadrant--${key}` });
+			const cellHeader = cell.createDiv({ cls: 'focus-first-quadrant-header' });
+			cellHeader.createEl('span', { text: quadrant.title, cls: 'focus-first-quadrant-title' });
+			cellHeader.createEl('span', { text: quadrant.subtitle, cls: 'focus-first-quadrant-subtitle' });
+			cellHeader.createEl('span', { text: String(tasks.length), cls: 'focus-first-quadrant-count' });
 
-			const link = li.createEl('span', { text, cls: 'focus-first-task-text' });
-			link.addEventListener('click', () => { void this.openTask(task); });
+			if (tasks.length === 0) {
+				cell.createEl('p', { text: '—', cls: 'focus-first-quadrant-empty' });
+				continue;
+			}
 
-			li.createEl('span', {
-				text: task.file.basename,
-				cls: 'focus-first-task-source',
+			const list = cell.createEl('ul', { cls: 'focus-first-task-list' });
+			for (const task of tasks) {
+				this.renderTask(list, task);
+			}
+		}
+	}
+
+	private renderTask(parent: HTMLElement, task: MatrixTask): void {
+		const li = parent.createEl('li', { cls: 'focus-first-task-item' });
+
+		const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').replace(/(🔺|⏫|🔼|🔽|⏬)\s*/g, '').replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+
+		const info = li.createDiv({ cls: 'focus-first-task-info' });
+		const titleEl = info.createEl('span', { text, cls: 'focus-first-task-text' });
+		titleEl.addEventListener('click', () => { void this.openTask(task); });
+
+		const meta = info.createEl('span', { cls: 'focus-first-task-meta' });
+		if (task.manual) meta.createEl('span', { text: '📌', cls: 'focus-first-task-pinned', attr: { title: t().view.manualTag } });
+		if (task.priority) meta.createEl('span', { text: task.priority, cls: 'focus-first-task-priority' });
+		if (task.dueDate) {
+			meta.createEl('span', {
+				text: `📅 ${task.dueDate.toLocaleDateString()}`,
+				cls: 'focus-first-task-due',
 			});
 		}
+		meta.createEl('span', { text: task.file.basename, cls: 'focus-first-task-source' });
 	}
 
 	private async openTask(task: TaskItem): Promise<void> {

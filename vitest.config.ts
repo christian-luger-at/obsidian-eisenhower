@@ -7,5 +7,11 @@ export default defineConfig({
 		alias: {
 			obsidian: '/Users/christian/dev/obsidian-focus-first/src/tests/__mocks__/obsidian.ts',
 		},
+		coverage: {
+			provider: 'v8',
+			include: ['src/**/*.ts'],
+			exclude: ['src/tests/**', 'src/main.ts', 'src/TaskView.ts'],
+			all: true,
+		},
 	},
 });

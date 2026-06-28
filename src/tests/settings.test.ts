@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_SETTINGS, FokusFirstSettings, TaskScope, Priority } from '../settings';
+import { createdSettings, clearCreatedSettings } from './__mocks__/obsidian';
 
 // ---------------------------------------------------------------------------
 // Unit tests — DEFAULT_SETTINGS
@@ -43,7 +44,12 @@ vi.mock('obsidian', () => import('./__mocks__/obsidian'));
 const { FokusFirstSettingTab } = await import('../settings');
 
 function makePlugin(overrides: Partial<FokusFirstSettings> = {}) {
-	const settings: FokusFirstSettings = { ...DEFAULT_SETTINGS, ...overrides };
+	// Deep-copy nested objects so tests can't mutate DEFAULT_SETTINGS via shared references
+	const settings: FokusFirstSettings = {
+		...DEFAULT_SETTINGS,
+		quadrantTags: { ...DEFAULT_SETTINGS.quadrantTags },
+		...overrides,
+	};
 	const saved: FokusFirstSettings[] = [];
 
 	const plugin = {
@@ -282,6 +288,7 @@ describe('loadSettings — merges persisted data with defaults', () => {
 			taskFolder: 'MyFolder',
 			urgencyDays: 7,
 			importantPriorities: ['🔺'],
+			quadrantTags: { do: '#do', schedule: '#schedule', delegate: '#delegate', eliminate: '#eliminate' },
 		};
 		const merged = Object.assign({}, DEFAULT_SETTINGS, persisted);
 
@@ -291,5 +298,158 @@ describe('loadSettings — merges persisted data with defaults', () => {
 	it('empty persisted object returns all defaults', () => {
 		const merged = Object.assign({}, DEFAULT_SETTINGS, {});
 		expect(merged).toEqual(DEFAULT_SETTINGS);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Helpers for onChange callback tests
+// ---------------------------------------------------------------------------
+
+function makeTabWithDisplay(overrides: Partial<FokusFirstSettings> = {}) {
+	const plugin = makePlugin(overrides);
+	const tab = makeTab(plugin);
+	clearCreatedSettings();
+	tab.display();
+	return { plugin, tab };
+}
+
+// Find the single dropdown created during display()
+function scopeDropdown() {
+	return createdSettings.find((s) => s.lastDropdown)?.lastDropdown;
+}
+
+// Find a text input by its initial value
+function textByValue(value: string) {
+	return createdSettings.find((s) => s.lastText?.inputEl.value === value)?.lastText;
+}
+
+// ---------------------------------------------------------------------------
+// onChange — scope dropdown
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — scope dropdown onChange', () => {
+	it('sets taskScope to "folder" and saves', async () => {
+		const { plugin } = makeTabWithDisplay({ taskScope: 'all' });
+		await scopeDropdown()?.simulate('folder');
+		expect(plugin.settings.taskScope).toBe('folder');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('sets taskScope back to "all" and saves', async () => {
+		const { plugin } = makeTabWithDisplay({ taskScope: 'folder', taskFolder: 'Work' });
+		await scopeDropdown()?.simulate('all');
+		expect(plugin.settings.taskScope).toBe('all');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — folder text input
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — folder text onChange', () => {
+	it('saves a non-empty folder path', async () => {
+		const { plugin } = makeTabWithDisplay({ taskScope: 'folder', taskFolder: '' });
+		const folderText = textByValue('');
+		await folderText?.simulate('Work/Tasks');
+		expect(plugin.settings.taskFolder).toBe('Work/Tasks');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves an empty folder path (user cleared the input)', async () => {
+		const { plugin } = makeTabWithDisplay({ taskScope: 'folder', taskFolder: 'Work' });
+		const folderText = textByValue('Work');
+		await folderText?.simulate('');
+		expect(plugin.settings.taskFolder).toBe('');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — urgencyDays text input
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — urgencyDays text onChange', () => {
+	it('saves a valid number', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('7');
+		expect(plugin.settings.urgencyDays).toBe(7);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves 0 (minimum valid value)', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('0');
+		expect(plugin.settings.urgencyDays).toBe(0);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves 364 (maximum valid value)', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('364');
+		expect(plugin.settings.urgencyDays).toBe(364);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('does NOT save when value is 365 (out of range)', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('365');
+		expect(plugin.settings.urgencyDays).toBe(3); // unchanged
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+	});
+
+	it('does NOT save when value is negative', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('-1');
+		expect(plugin.settings.urgencyDays).toBe(3);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+	});
+
+	it('does NOT save when value is not a number', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('3')?.simulate('abc');
+		expect(plugin.settings.urgencyDays).toBe(3);
+		expect(plugin.saveSettings).not.toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — quadrant tag text inputs
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — quadrant tag onChange', () => {
+	it('saves the "do" tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#do')?.simulate('#jetzt');
+		expect(plugin.settings.quadrantTags.do).toBe('#jetzt');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves the "schedule" tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#schedule')?.simulate('#bald');
+		expect(plugin.settings.quadrantTags.schedule).toBe('#bald');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves the "delegate" tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#delegate')?.simulate('#delegieren');
+		expect(plugin.settings.quadrantTags.delegate).toBe('#delegieren');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves the "eliminate" tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#eliminate')?.simulate('#irgendwann');
+		expect(plugin.settings.quadrantTags.eliminate).toBe('#irgendwann');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('trims whitespace from the saved tag value', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#do')?.simulate('  #clean  ');
+		expect(plugin.settings.quadrantTags.do).toBe('#clean');
+		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 });

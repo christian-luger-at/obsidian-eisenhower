@@ -16,11 +16,19 @@ interface Translations {
 	view: {
 		title: string;
 		refresh: string;
+		searchPlaceholder: string;
+		manualTag: string;
 		scope: string;
 		scopeAll: string;
 		open: string;
 		done: string;
 		empty: string;
+		quadrants: {
+			do: { title: string; subtitle: string };
+			schedule: { title: string; subtitle: string };
+			delegate: { title: string; subtitle: string };
+			eliminate: { title: string; subtitle: string };
+		};
 	};
 	settings: {
 		setting1: { name: string; desc: string; placeholder: string };
@@ -40,6 +48,8 @@ interface Translations {
 		matrixHeading: string;
 		urgencyDays: { name: string; desc: string; error: string };
 		importantPriorities: { name: string; desc: string; error: string };
+		quadrantTagsHeading: string;
+		quadrantTagsDesc: string;
 	};
 }
 
@@ -61,11 +71,19 @@ const translations: Record<Lang, Translations> = {
 		view: {
 			title: 'Focus First',
 			refresh: 'Refresh',
+			searchPlaceholder: 'Search tasks…',
+			manualTag: 'Manually assigned via tag',
 			scope: 'Scope',
 			scopeAll: 'Entire vault',
 			open: 'open',
 			done: 'done',
 			empty: 'No open tasks found.',
+			quadrants: {
+				do:       { title: 'Do',       subtitle: 'Urgent · Important' },
+				schedule: { title: 'Schedule', subtitle: 'Not urgent · Important' },
+				delegate: { title: 'Delegate', subtitle: 'Urgent · Not important' },
+				eliminate:{ title: 'Eliminate',subtitle: 'Not urgent · Not important' },
+			},
 		},
 		settings: {
 			setting1: {
@@ -97,6 +115,8 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Tasks carrying any of the selected priority levels are placed in the "Important" axis of the matrix. Select at least one.',
 				error: 'At least one priority must be selected.',
 			},
+			quadrantTagsHeading: 'Manual Quadrant Assignment',
+			quadrantTagsDesc: 'Add one of these tags to any task to pin it to a specific quadrant, overriding the automatic classification.',
 		},
 	},
 	de: {
@@ -116,11 +136,19 @@ const translations: Record<Lang, Translations> = {
 		view: {
 			title: 'Focus First',
 			refresh: 'Aktualisieren',
+			searchPlaceholder: 'Aufgaben suchen…',
+			manualTag: 'Manuell per Tag zugewiesen',
 			scope: 'Bereich',
 			scopeAll: 'Gesamter Vault',
 			open: 'offen',
 			done: 'erledigt',
 			empty: 'Keine offenen Aufgaben gefunden.',
+			quadrants: {
+				do:       { title: 'Erledigen',  subtitle: 'Dringend · Wichtig' },
+				schedule: { title: 'Einplanen',  subtitle: 'Nicht dringend · Wichtig' },
+				delegate: { title: 'Delegieren', subtitle: 'Dringend · Nicht wichtig' },
+				eliminate:{ title: 'Eliminieren',subtitle: 'Nicht dringend · Nicht wichtig' },
+			},
 		},
 		settings: {
 			setting1: {
@@ -152,6 +180,8 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Aufgaben mit einer der gewählten Prioritätsstufen werden auf der „Wichtig"-Achse der Matrix eingeordnet. Mindestens eine Priorität muss ausgewählt sein.',
 				error: 'Es muss mindestens eine Priorität ausgewählt sein.',
 			},
+			quadrantTagsHeading: 'Manuelle Quadranten-Zuweisung',
+			quadrantTagsDesc: 'Füge einer Aufgabe einen dieser Tags hinzu, um sie einem bestimmten Quadranten zuzuweisen. Dieser Tag überschreibt die automatische Klassifizierung.',
 		},
 	},
 };

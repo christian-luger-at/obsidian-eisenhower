@@ -15,12 +15,20 @@ export const PRIORITY_OPTIONS = [
 
 export type Priority = (typeof PRIORITY_OPTIONS)[number]['value'];
 
+export interface QuadrantTags {
+	do: string;
+	schedule: string;
+	delegate: string;
+	eliminate: string;
+}
+
 export interface FokusFirstSettings {
 	mySetting: string;
 	taskScope: TaskScope;
 	taskFolder: string;
-	urgencyDays: number;        // tasks due within this many days (or overdue) are urgent
-	importantPriorities: Priority[]; // tasks with these priorities are considered important
+	urgencyDays: number;
+	importantPriorities: Priority[];
+	quadrantTags: QuadrantTags;
 }
 
 export const DEFAULT_SETTINGS: FokusFirstSettings = {
@@ -29,6 +37,12 @@ export const DEFAULT_SETTINGS: FokusFirstSettings = {
 	taskFolder: '',
 	urgencyDays: 3,
 	importantPriorities: ['🔺', '⏫'],
+	quadrantTags: {
+		do:       '#do',
+		schedule: '#schedule',
+		delegate: '#delegate',
+		eliminate: '#eliminate',
+	},
 };
 
 class FolderSuggest extends AbstractInputSuggest<TFolder> {
@@ -188,5 +202,35 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 		}
 
 		updatePills();
+
+		// --- Quadrant tag overrides ---
+
+		new Setting(containerEl).setName(t().settings.quadrantTagsHeading).setHeading();
+
+		containerEl.createEl('p', {
+			text: t().settings.quadrantTagsDesc,
+			cls: 'focus-first-setting-hint',
+		});
+
+		const quadrantTagDefs: { key: keyof QuadrantTags; label: string }[] = [
+			{ key: 'do',       label: t().view.quadrants.do.title },
+			{ key: 'schedule', label: t().view.quadrants.schedule.title },
+			{ key: 'delegate', label: t().view.quadrants.delegate.title },
+			{ key: 'eliminate',label: t().view.quadrants.eliminate.title },
+		];
+
+		for (const def of quadrantTagDefs) {
+			new Setting(containerEl)
+				.setName(def.label)
+				.addText((text) =>
+					text
+						.setPlaceholder(`#${def.key}`)
+						.setValue(this.plugin.settings.quadrantTags[def.key])
+						.onChange(async (value) => {
+							this.plugin.settings.quadrantTags[def.key] = value.trim();
+							await this.plugin.saveSettings();
+						}),
+				);
+		}
 	}
 }

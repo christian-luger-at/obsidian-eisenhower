@@ -1,3 +1,176 @@
+/* ── Header ─────────────────────────────────────────────── */
+
+.focus-first-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--size-4-3) var(--size-4-4);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.focus-first-header h4 {
+	margin: 0;
+}
+
+/* ── Search bar ──────────────────────────────────────────── */
+
+.focus-first-search-bar {
+	padding: var(--size-4-2) var(--size-4-4);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.focus-first-search-input {
+	width: 100%;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: var(--size-2-2) var(--size-4-2);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
+.focus-first-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.focus-first-empty {
+	text-align: center;
+	color: var(--text-muted);
+	padding: var(--size-4-8);
+}
+
+/* ── Matrix container ────────────────────────────────────── */
+
+.focus-first-matrix-container {
+	height: calc(100% - 88px);
+	overflow: hidden;
+	padding: var(--size-4-3);
+	box-sizing: border-box;
+}
+
+/* ── Matrix grid ─────────────────────────────────────────── */
+
+.focus-first-matrix {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	gap: var(--size-4-2);
+	height: 100%;
+	overflow: hidden;
+}
+
+/* ── Quadrant cell ───────────────────────────────────────── */
+
+.focus-first-quadrant {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.focus-first-quadrant--do     { border-top: 3px solid var(--color-red); }
+.focus-first-quadrant--schedule { border-top: 3px solid var(--color-blue); }
+.focus-first-quadrant--delegate { border-top: 3px solid var(--color-orange); }
+.focus-first-quadrant--eliminate { border-top: 3px solid var(--text-muted); }
+
+.focus-first-quadrant-header {
+	display: flex;
+	align-items: baseline;
+	gap: var(--size-2-2);
+	padding: var(--size-2-3) var(--size-4-2) var(--size-2-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.focus-first-quadrant-title {
+	font-weight: var(--font-semibold);
+	font-size: var(--font-ui-small);
+}
+
+.focus-first-quadrant-subtitle {
+	font-size: var(--font-smallest);
+	color: var(--text-muted);
+	flex: 1;
+}
+
+.focus-first-quadrant-count {
+	font-size: var(--font-smallest);
+	color: var(--text-muted);
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+	padding: 0 var(--size-2-2);
+}
+
+.focus-first-quadrant-empty {
+	color: var(--text-faint);
+	font-size: var(--font-smaller);
+	text-align: center;
+	padding: var(--size-4-4);
+	margin: 0;
+}
+
+/* ── Task list ───────────────────────────────────────────── */
+
+.focus-first-task-list {
+	list-style: none;
+	margin: 0;
+	padding: var(--size-2-1) 0;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.focus-first-task-item {
+	padding: var(--size-2-1) var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+}
+
+.focus-first-task-item:last-child {
+	border-bottom: none;
+}
+
+.focus-first-task-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.focus-first-task-text {
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	color: var(--text-normal);
+}
+
+.focus-first-task-text:hover {
+	color: var(--text-accent);
+}
+
+.focus-first-task-meta {
+	display: flex;
+	gap: var(--size-2-2);
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.focus-first-task-priority,
+.focus-first-task-due,
+.focus-first-task-source {
+	font-size: var(--font-smallest);
+	color: var(--text-muted);
+}
+
+/* ── Settings ────────────────────────────────────────────── */
+
+.focus-first-setting-hint {
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	margin: -8px 0 4px;
+	padding: 0 var(--size-4-4);
+}
+
 .focus-first-hidden {
 	display: none;
 }

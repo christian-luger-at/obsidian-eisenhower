@@ -104,18 +104,23 @@ src/
   TaskView.ts      # custom Leaf View — task list panel
   taskScanner.ts   # vault/folder task discovery via metadataCache
   i18n.ts          # EN/DE translations
+  matrixClassifier.ts          # Eisenhower matrix classification logic
   tests/
-    settings.test.ts          # unit & integration tests for settings
-    __mocks__/obsidian.ts     # minimal Obsidian API stubs for testing
+    settings.test.ts           # unit & integration tests for settings
+    matrixClassifier.test.ts   # unit & integration tests for matrix classifier
+    __mocks__/obsidian.ts      # minimal Obsidian API stubs for testing
 ```
 
 ## Build commands
 
-- **`npm run dev`** – watch mode for development (esbuild recompiles on changes)
-- **`npm run build`** – production build with TypeScript type check and minification
-- **`npm run lint`** – run ESLint with Obsidian-specific rules
-- **`npm test`** – run all unit and integration tests (Vitest)
-- **`npm run test:watch`** – run tests in watch mode, re-runs on every file save
+| Command | Description |
+|---|---|
+| `npm run dev` | Watch mode for development (esbuild recompiles on changes) |
+| `npm run build` | Production build with TypeScript type check and minification |
+| `npm run lint` | Run ESLint with Obsidian-specific rules |
+| `npm test` | Run all unit and integration tests once (Vitest) |
+| `npm run test:watch` | Run tests in watch mode, re-runs on every file save |
+| `npm run test:coverage` | Run tests and print a coverage report |
 
 ## Testing
 
@@ -127,7 +132,12 @@ npm test
 
 # Watch mode during development
 npm run test:watch
+
+# Measure code coverage
+npm run test:coverage
 ```
+
+The coverage report shows statement, branch, function, and line coverage for all files in `src/` (except `main.ts` and `TaskView.ts`, which require a live Obsidian environment).
 
 ### What is tested
 
@@ -135,8 +145,14 @@ npm run test:watch
 |---|---|---|
 | `settings.test.ts` | Unit | `DEFAULT_SETTINGS` values and type contract |
 | `settings.test.ts` | Integration | `FokusFirstSettingTab` renders without errors for both scope options |
-| `settings.test.ts` | Integration | `saveSettings` is called and captures each field change correctly |
+| `settings.test.ts` | Integration | `onChange` callbacks for scope dropdown, folder input, urgency days, and quadrant tags |
+| `settings.test.ts` | Integration | `saveSettings` is called with correct values; invalid urgency inputs are rejected |
 | `settings.test.ts` | Integration | `loadSettings` merge logic — defaults, partial, and full overrides |
+| `matrixClassifier.test.ts` | Unit | Urgency logic — due today, overdue, within/beyond threshold, no date |
+| `matrixClassifier.test.ts` | Unit | Importance logic — priority in/not in list, no priority |
+| `matrixClassifier.test.ts` | Unit | All four quadrant combinations (urgent × important) |
+| `matrixClassifier.test.ts` | Unit | Manual tag override — all four tags, case-insensitive, first tag wins |
+| `matrixClassifier.test.ts` | Integration | Completed tasks excluded, mixed task list, custom tag configuration |
 
 ### Adding new tests
 
