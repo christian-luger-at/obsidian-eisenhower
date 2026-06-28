@@ -23,17 +23,17 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName(t().settings.setting1.name)
-			.setDesc(t().settings.setting1.desc)
-			.addText((text) =>
-				text
-					.setPlaceholder(t().settings.setting1.placeholder)
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					}),
-			);
+		// new Setting(containerEl)
+		// 	.setName(t().settings.setting1.name)
+		// 	.setDesc(t().settings.setting1.desc)
+		// 	.addText((text) =>
+		// 		text
+		// 			.setPlaceholder(t().settings.setting1.placeholder)
+		// 			.setValue(this.plugin.settings.mySetting)
+		// 			.onChange(async (value) => {
+		// 				this.plugin.settings.mySetting = value;
+		// 				await this.plugin.saveSettings();
+		// 			}),
+		// 	);
 	}
 }
