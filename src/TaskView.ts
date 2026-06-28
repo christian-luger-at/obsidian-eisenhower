@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, MarkdownView, TFile, debounce } from 'obsidian
 import FocusFirstPlugin from './main';
 import { scanTasks, TaskItem } from './taskScanner';
 import { classifyTasks, MatrixTask, Quadrant } from './matrixClassifier';
+import { SortField } from './settings';
 import { t } from './i18n';
 
 export const FOCUS_FIRST_VIEW_TYPE = 'focus-first-view';
@@ -97,6 +98,8 @@ export class FocusFirstView extends ItemView {
 			const quadrant = t().view.quadrants[key];
 
 			const cell = matrix.createDiv({ cls: `focus-first-quadrant focus-first-quadrant--${key}` });
+			cell.style.borderTopColor = this.plugin.settings.quadrants[key].color;
+			this.makeDropTarget(cell, key);
 			const cellHeader = cell.createDiv({ cls: 'focus-first-quadrant-header' });
 			cellHeader.createEl('span', { text: quadrant.title, cls: 'focus-first-quadrant-title' });
 			cellHeader.createEl('span', { text: quadrant.subtitle, cls: 'focus-first-quadrant-subtitle' });
@@ -108,14 +111,31 @@ export class FocusFirstView extends ItemView {
 			}
 
 			const list = cell.createEl('ul', { cls: 'focus-first-task-list' });
-			for (const task of tasks) {
-				this.renderTask(list, task);
+			const sorted = this.sortTasks(tasks, key);
+
+			if (this.plugin.settings.groupByPrimary) {
+				const primaryField = this.plugin.settings.quadrants[key].sort.primary;
+				const groups = new Map<string, MatrixTask[]>();
+				for (const task of sorted) {
+					const gk = this.groupKey(task, primaryField);
+					if (!groups.has(gk)) groups.set(gk, []);
+					groups.get(gk)!.push(task);
+				}
+				const sortedKeys = [...groups.keys()].sort(this.groupOrder(primaryField));
+				for (const gk of sortedKeys) {
+					this.renderTaskGroup(list, this.groupLabel(gk, primaryField), groups.get(gk)!);
+				}
+			} else {
+				for (const task of sorted) {
+					this.renderTask(list, task);
+				}
 			}
 		}
 	}
 
 	private renderTask(parent: HTMLElement, task: MatrixTask): void {
 		const li = parent.createEl('li', { cls: 'focus-first-task-item' });
+		this.makeDraggable(li, task);
 
 		const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').replace(/(🔺|⏫|🔼|🔽|⏬)\s*/g, '').replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
 
@@ -133,6 +153,177 @@ export class FocusFirstView extends ItemView {
 			});
 		}
 		meta.createEl('span', { text: task.file.basename, cls: 'focus-first-task-source' });
+	}
+
+	private static readonly PRIORITY_ORDER = ['🔺', '⏫', '🔼', '🔽', '⏬'];
+
+	private compareFn(field: SortField): (a: MatrixTask, b: MatrixTask) => number {
+		switch (field) {
+			case 'priority':
+				return (a, b) => {
+					const ai = a.priority ? FocusFirstView.PRIORITY_ORDER.indexOf(a.priority) : 99;
+					const bi = b.priority ? FocusFirstView.PRIORITY_ORDER.indexOf(b.priority) : 99;
+					return ai - bi;
+				};
+			case 'dueDate':
+				return (a, b) => {
+					if (!a.dueDate && !b.dueDate) return 0;
+					if (!a.dueDate) return 1;
+					if (!b.dueDate) return -1;
+					return a.dueDate.getTime() - b.dueDate.getTime();
+				};
+			case 'alpha':
+				return (a, b) => {
+					const textA = a.line.replace(/^[\s\-*]*\[.\]\s*/, '').toLowerCase();
+					const textB = b.line.replace(/^[\s\-*]*\[.\]\s*/, '').toLowerCase();
+					return textA.localeCompare(textB);
+				};
+		}
+	}
+
+	private sortTasks(tasks: MatrixTask[], quadrant: Quadrant): MatrixTask[] {
+		const { primary, secondary } = this.plugin.settings.quadrants[quadrant].sort;
+		const fns = [this.compareFn(primary), this.compareFn(secondary)];
+		return [...tasks].sort((a, b) => {
+			for (const fn of fns) {
+				const r = fn(a, b);
+				if (r !== 0) return r;
+			}
+			return 0;
+		});
+	}
+
+	private groupKey(task: MatrixTask, field: SortField): string {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		switch (field) {
+			case 'priority':
+				return task.priority ?? '__none__';
+			case 'dueDate': {
+				if (!task.dueDate) return '__nodate__';
+				const due = new Date(task.dueDate);
+				due.setHours(0, 0, 0, 0);
+				const diff = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+				if (diff < 0) return '__overdue__';
+				if (diff === 0) return '__today__';
+				const dayOfWeek = today.getDay();
+				const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+				if (diff <= daysToSunday) return '__thisweek__';
+				if (diff <= 14) return '__upcoming__';
+				return '__later__';
+			}
+			case 'alpha': {
+				const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').trim();
+				return text.charAt(0).toUpperCase() || '#';
+			}
+		}
+	}
+
+	private groupLabel(key: string, field: SortField): string {
+		const g = t().groups;
+		if (field === 'priority') {
+			if (key === '__none__') return g.noPriority;
+			return key;
+		}
+		if (field === 'dueDate') {
+			const map: Record<string, string> = {
+				'__overdue__':  g.overdue,
+				'__today__':    g.today,
+				'__thisweek__': g.thisWeek,
+				'__upcoming__': g.upcoming,
+				'__later__':    g.later,
+				'__nodate__':   g.noDate,
+			};
+			return map[key] ?? key;
+		}
+		return key;
+	}
+
+	private groupOrder(field: SortField): (a: string, b: string) => number {
+		if (field === 'priority') {
+			const order = [...FocusFirstView.PRIORITY_ORDER, '__none__'];
+			return (a, b) => order.indexOf(a) - order.indexOf(b);
+		}
+		if (field === 'dueDate') {
+			const order = ['__overdue__', '__today__', '__thisweek__', '__upcoming__', '__later__', '__nodate__'];
+			return (a, b) => order.indexOf(a) - order.indexOf(b);
+		}
+		return (a, b) => a.localeCompare(b);
+	}
+
+	private renderTaskGroup(list: HTMLElement, label: string, tasks: MatrixTask[]): void {
+		list.createEl('li', { text: label, cls: 'focus-first-group-header' });
+		for (const task of tasks) {
+			this.renderTask(list, task);
+		}
+	}
+
+	private makeDraggable(li: HTMLElement, task: MatrixTask): void {
+		li.draggable = true;
+		li.addEventListener('dragstart', (e) => {
+			e.dataTransfer?.setData('application/json', JSON.stringify({
+				filePath: task.file.path,
+				lineNumber: task.lineNumber,
+				quadrant: task.quadrant,
+			}));
+			li.classList.add('is-dragging');
+		});
+		li.addEventListener('dragend', () => {
+			li.classList.remove('is-dragging');
+		});
+	}
+
+	private makeDropTarget(cell: HTMLElement, targetQuadrant: Quadrant): void {
+		cell.addEventListener('dragover', (e) => {
+			e.preventDefault();
+			cell.classList.add('is-drag-over');
+		});
+		cell.addEventListener('dragleave', (e) => {
+			if (!cell.contains(e.relatedTarget as Node)) {
+				cell.classList.remove('is-drag-over');
+			}
+		});
+		cell.addEventListener('drop', (e) => {
+			e.preventDefault();
+			cell.classList.remove('is-drag-over');
+			const raw = e.dataTransfer?.getData('application/json');
+			if (!raw) return;
+			const { filePath, lineNumber, quadrant: sourceQuadrant } = JSON.parse(raw) as {
+				filePath: string;
+				lineNumber: number;
+				quadrant: Quadrant;
+			};
+			if (sourceQuadrant === targetQuadrant) return;
+			void this.moveTaskToQuadrant(filePath, lineNumber, targetQuadrant);
+		});
+	}
+
+	private async moveTaskToQuadrant(filePath: string, lineNumber: number, targetQuadrant: Quadrant): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) return;
+
+		const content = await this.app.vault.read(file);
+		const lines = content.split('\n');
+		const line = lines[lineNumber];
+		if (line === undefined) return;
+
+		const quadrantTags = Object.values(this.plugin.settings.quadrants)
+			.map((q) => q.tag.trim())
+			.filter(Boolean);
+
+		let newLine = line;
+		for (const tag of quadrantTags) {
+			const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			newLine = newLine.replace(new RegExp(`\\s*${escaped}(?=\\s|$)`, 'g'), '');
+		}
+
+		const targetTag = this.plugin.settings.quadrants[targetQuadrant].tag.trim();
+		if (targetTag) {
+			newLine = newLine.trimEnd() + ' ' + targetTag;
+		}
+
+		lines[lineNumber] = newLine;
+		await this.app.vault.modify(file, lines.join('\n'));
 	}
 
 	private async openTask(task: TaskItem): Promise<void> {

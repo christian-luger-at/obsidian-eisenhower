@@ -153,7 +153,6 @@ describe('manual tag override', () => {
 	const settings = makeSettings({
 		urgencyDays: 3,
 		importantPriorities: ['🔺'],
-		quadrantTags: { do: '#do', schedule: '#schedule', delegate: '#delegate', eliminate: '#eliminate' },
 	});
 
 	it('tag overrides auto-classification to "do"', () => {
@@ -220,7 +219,7 @@ describe('manual tag override', () => {
 	});
 
 	it('empty tag string in settings does not match untagged tasks', () => {
-		const s = makeSettings({ quadrantTags: { do: '', schedule: '#schedule', delegate: '#delegate', eliminate: '#eliminate' } });
+		const s = makeSettings({ quadrants: { ...DEFAULT_SETTINGS.quadrants, do: { ...DEFAULT_SETTINGS.quadrants.do, tag: '' } } });
 		const task = makeTask({ tags: [] });
 		const result = classifyTasks([task], s);
 		expect(result.eliminate).toHaveLength(1);
@@ -261,7 +260,6 @@ describe('mixed task list', () => {
 		settings = makeSettings({
 			urgencyDays: 3,
 			importantPriorities: ['🔺', '⏫'],
-			quadrantTags: { do: '#do', schedule: '#schedule', delegate: '#delegate', eliminate: '#eliminate' },
 		});
 	});
 
@@ -301,7 +299,12 @@ describe('mixed task list', () => {
 
 	it('tasks with custom tag configuration use the configured tag values', () => {
 		const s = makeSettings({
-			quadrantTags: { do: '#jetzt', schedule: '#bald', delegate: '#delegieren', eliminate: '#irgendwann' },
+			quadrants: {
+				do:       { ...DEFAULT_SETTINGS.quadrants.do,       tag: '#jetzt' },
+				schedule: { ...DEFAULT_SETTINGS.quadrants.schedule, tag: '#bald' },
+				delegate: { ...DEFAULT_SETTINGS.quadrants.delegate, tag: '#delegieren' },
+				eliminate:{ ...DEFAULT_SETTINGS.quadrants.eliminate,tag: '#irgendwann' },
+			},
 		});
 		const task = makeTask({ tags: ['#jetzt'] });
 		const result = classifyTasks([task], s);

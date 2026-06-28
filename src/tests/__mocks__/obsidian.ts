@@ -75,7 +75,7 @@ export class SliderComponent {
 	getValue() { return this._value; }
 	setDynamicTooltip() { return this; }
 	onChange(cb: (v: number) => unknown) { this._onChange = cb; return this; }
-	async simulate(v: number) { this._value = v; await this._onChange?.(v); }
+	async simulate(v: number): Promise<void> { this._value = v; await this._onChange?.(v); }
 }
 
 export class ToggleComponent {
@@ -84,7 +84,7 @@ export class ToggleComponent {
 	setValue(v: boolean) { this._value = v; return this; }
 	getValue() { return this._value; }
 	onChange(cb: (v: boolean) => unknown) { this._onChange = cb; return this; }
-	async simulate(v: boolean) { this._value = v; await this._onChange?.(v); }
+	async simulate(v: boolean): Promise<void> { this._value = v; await this._onChange?.(v); }
 }
 
 export class DropdownComponent {
@@ -94,17 +94,20 @@ export class DropdownComponent {
 	setValue(v: string) { this._value = v; return this; }
 	getValue() { return this._value; }
 	onChange(cb: (v: string) => unknown) { this._onChange = cb; return this; }
-	async simulate(v: string) { this._value = v; await this._onChange?.(v); }
+	async simulate(v: string): Promise<void> { this._value = v; await this._onChange?.(v); }
 }
 
 export class TextComponent {
 	inputEl = {
 		value: '',
+		type: '',
 		classList: {
+			add: (_cls: string) => {},
 			toggle: (_cls: string, _force?: boolean) => {},
 			contains: (_cls: string) => false,
 		},
 		setAttribute: (_k: string, _v: string) => {},
+		addEventListener: (_event: string, _cb: () => void) => {},
 	} as unknown as HTMLInputElement;
 
 	private _onChange?: (v: string) => unknown;
@@ -113,7 +116,7 @@ export class TextComponent {
 	setValue(v: string) { this.inputEl.value = v; return this; }
 	getValue() { return this.inputEl.value; }
 	onChange(cb: (v: string) => unknown) { this._onChange = cb; return this; }
-	async simulate(v: string) { this.inputEl.value = v; await this._onChange?.(v); }
+	async simulate(v: string): Promise<void> { this.inputEl.value = v; await this._onChange?.(v); }
 }
 
 export class AbstractInputSuggest<T> {

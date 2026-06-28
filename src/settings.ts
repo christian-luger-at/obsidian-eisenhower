@@ -4,6 +4,26 @@ import { t } from './i18n';
 
 export type TaskScope = 'all' | 'folder';
 
+export type SortField = 'priority' | 'dueDate' | 'alpha';
+
+export interface QuadrantSort {
+	primary: SortField;
+	secondary: SortField;
+}
+
+export interface QuadrantSettings {
+	tag: string;
+	color: string;
+	sort: QuadrantSort;
+}
+
+export interface QuadrantConfig {
+	do: QuadrantSettings;
+	schedule: QuadrantSettings;
+	delegate: QuadrantSettings;
+	eliminate: QuadrantSettings;
+}
+
 // Priority values as used by the Obsidian Tasks plugin
 export const PRIORITY_OPTIONS = [
 	{ value: '🔺', label: '🔺 Highest' },
@@ -15,20 +35,14 @@ export const PRIORITY_OPTIONS = [
 
 export type Priority = (typeof PRIORITY_OPTIONS)[number]['value'];
 
-export interface QuadrantTags {
-	do: string;
-	schedule: string;
-	delegate: string;
-	eliminate: string;
-}
-
 export interface FokusFirstSettings {
 	mySetting: string;
 	taskScope: TaskScope;
 	taskFolder: string;
 	urgencyDays: number;
 	importantPriorities: Priority[];
-	quadrantTags: QuadrantTags;
+	quadrants: QuadrantConfig;
+	groupByPrimary: boolean;
 }
 
 export const DEFAULT_SETTINGS: FokusFirstSettings = {
@@ -37,12 +51,13 @@ export const DEFAULT_SETTINGS: FokusFirstSettings = {
 	taskFolder: '',
 	urgencyDays: 3,
 	importantPriorities: ['🔺', '⏫'],
-	quadrantTags: {
-		do:       '#do',
-		schedule: '#schedule',
-		delegate: '#delegate',
-		eliminate: '#eliminate',
+	quadrants: {
+		do:       { tag: '#do',       color: '#e03131', sort: { primary: 'priority', secondary: 'dueDate' } },
+		schedule: { tag: '#schedule', color: '#1971c2', sort: { primary: 'dueDate',  secondary: 'priority' } },
+		delegate: { tag: '#delegate', color: '#e8590c', sort: { primary: 'dueDate',  secondary: 'priority' } },
+		eliminate:{ tag: '#eliminate',color: '#868e96', sort: { primary: 'priority', secondary: 'alpha'    } },
 	},
+	groupByPrimary: false,
 };
 
 class FolderSuggest extends AbstractInputSuggest<TFolder> {
@@ -203,34 +218,96 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 
 		updatePills();
 
-		// --- Quadrant tag overrides ---
+		// --- Quadrant settings (one section per quadrant) ---
 
-		new Setting(containerEl).setName(t().settings.quadrantTagsHeading).setHeading();
+		new Setting(containerEl).setName(t().settings.quadrantsHeading).setHeading();
 
 		containerEl.createEl('p', {
 			text: t().settings.quadrantTagsDesc,
 			cls: 'focus-first-setting-hint',
 		});
 
-		const quadrantTagDefs: { key: keyof QuadrantTags; label: string }[] = [
+		new Setting(containerEl)
+			.setName(t().settings.groupByPrimary.name)
+			.setDesc(t().settings.groupByPrimary.desc)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.groupByPrimary)
+					.onChange(async (value) => {
+						this.plugin.settings.groupByPrimary = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		const sortFieldOptions: Record<SortField, string> = {
+			priority: t().settings.sortField.priority,
+			dueDate:  t().settings.sortField.dueDate,
+			alpha:    t().settings.sortField.alpha,
+		};
+
+		const quadrantDefs: { key: keyof QuadrantConfig; label: string }[] = [
 			{ key: 'do',       label: t().view.quadrants.do.title },
 			{ key: 'schedule', label: t().view.quadrants.schedule.title },
 			{ key: 'delegate', label: t().view.quadrants.delegate.title },
 			{ key: 'eliminate',label: t().view.quadrants.eliminate.title },
 		];
 
-		for (const def of quadrantTagDefs) {
+		for (const def of quadrantDefs) {
+			const q = this.plugin.settings.quadrants[def.key];
+
+			new Setting(containerEl).setName(def.label).setHeading();
+
 			new Setting(containerEl)
-				.setName(def.label)
+				.setName(t().settings.quadrantColor)
+				.addText((text) => {
+					text.inputEl.type = 'color';
+					text.inputEl.value = q.color;
+					text.inputEl.classList.add('focus-first-color-input');
+					text.inputEl.addEventListener('input', () => {
+						this.plugin.settings.quadrants[def.key].color = text.inputEl.value;
+						void this.plugin.saveSettings();
+					});
+				});
+
+			new Setting(containerEl)
+				.setName(t().settings.quadrantTag)
 				.addText((text) =>
 					text
 						.setPlaceholder(`#${def.key}`)
-						.setValue(this.plugin.settings.quadrantTags[def.key])
+						.setValue(q.tag)
 						.onChange(async (value) => {
-							this.plugin.settings.quadrantTags[def.key] = value.trim();
+							this.plugin.settings.quadrants[def.key].tag = value.trim();
 							await this.plugin.saveSettings();
 						}),
 				);
+
+			new Setting(containerEl)
+				.setName(t().settings.sortPrimary)
+				.addDropdown((drop) => {
+					for (const [value, label] of Object.entries(sortFieldOptions)) {
+						drop.addOption(value, label);
+					}
+					return drop
+						.setValue(q.sort.primary)
+						.onChange(async (value) => {
+							this.plugin.settings.quadrants[def.key].sort.primary = value as SortField;
+							await this.plugin.saveSettings();
+						});
+				});
+
+			new Setting(containerEl)
+				.setName(t().settings.sortSecondary)
+				.addDropdown((drop) => {
+					for (const [value, label] of Object.entries(sortFieldOptions)) {
+						drop.addOption(value, label);
+					}
+					return drop
+						.setValue(q.sort.secondary)
+						.onChange(async (value) => {
+							this.plugin.settings.quadrants[def.key].sort.secondary = value as SortField;
+							await this.plugin.saveSettings();
+						});
+				});
 		}
 	}
 }

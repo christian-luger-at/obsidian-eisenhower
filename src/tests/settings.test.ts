@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_SETTINGS, FokusFirstSettings, TaskScope, Priority } from '../settings';
+import type { FokusFirstSettingTab as FokusFirstSettingTabType } from '../settings';
 import { createdSettings, clearCreatedSettings } from './__mocks__/obsidian';
+import type { DropdownComponent, TextComponent } from './__mocks__/obsidian';
 
 // ---------------------------------------------------------------------------
 // Unit tests — DEFAULT_SETTINGS
@@ -47,7 +49,12 @@ function makePlugin(overrides: Partial<FokusFirstSettings> = {}) {
 	// Deep-copy nested objects so tests can't mutate DEFAULT_SETTINGS via shared references
 	const settings: FokusFirstSettings = {
 		...DEFAULT_SETTINGS,
-		quadrantTags: { ...DEFAULT_SETTINGS.quadrantTags },
+		quadrants: {
+			do:       { ...DEFAULT_SETTINGS.quadrants.do,       sort: { ...DEFAULT_SETTINGS.quadrants.do.sort } },
+			schedule: { ...DEFAULT_SETTINGS.quadrants.schedule, sort: { ...DEFAULT_SETTINGS.quadrants.schedule.sort } },
+			delegate: { ...DEFAULT_SETTINGS.quadrants.delegate, sort: { ...DEFAULT_SETTINGS.quadrants.delegate.sort } },
+			eliminate:{ ...DEFAULT_SETTINGS.quadrants.eliminate,sort: { ...DEFAULT_SETTINGS.quadrants.eliminate.sort } },
+		},
 		...overrides,
 	};
 	const saved: FokusFirstSettings[] = [];
@@ -67,7 +74,7 @@ function makePlugin(overrides: Partial<FokusFirstSettings> = {}) {
 	return plugin;
 }
 
-function makeTab(plugin: ReturnType<typeof makePlugin>) {
+function makeTab(plugin: ReturnType<typeof makePlugin>): FokusFirstSettingTabType {
 	// @ts-expect-error — stub app, not a real Obsidian App
 	const tab = new FokusFirstSettingTab(plugin.app, plugin);
 	// Provide a minimal containerEl so Setting constructors don't throw
@@ -288,7 +295,13 @@ describe('loadSettings — merges persisted data with defaults', () => {
 			taskFolder: 'MyFolder',
 			urgencyDays: 7,
 			importantPriorities: ['🔺'],
-			quadrantTags: { do: '#do', schedule: '#schedule', delegate: '#delegate', eliminate: '#eliminate' },
+			quadrants: {
+				do:       { tag: '#do',       color: '#e03131', sort: { primary: 'priority', secondary: 'dueDate' } },
+				schedule: { tag: '#schedule', color: '#1971c2', sort: { primary: 'dueDate',  secondary: 'priority' } },
+				delegate: { tag: '#delegate', color: '#e8590c', sort: { primary: 'dueDate',  secondary: 'priority' } },
+				eliminate:{ tag: '#eliminate',color: '#868e96', sort: { primary: 'priority', secondary: 'alpha'    } },
+			},
+			groupByPrimary: false,
 		};
 		const merged = Object.assign({}, DEFAULT_SETTINGS, persisted);
 
@@ -314,12 +327,12 @@ function makeTabWithDisplay(overrides: Partial<FokusFirstSettings> = {}) {
 }
 
 // Find the single dropdown created during display()
-function scopeDropdown() {
+function scopeDropdown(): DropdownComponent | undefined {
 	return createdSettings.find((s) => s.lastDropdown)?.lastDropdown;
 }
 
 // Find a text input by its initial value
-function textByValue(value: string) {
+function textByValue(value: string): TextComponent | undefined {
 	return createdSettings.find((s) => s.lastText?.inputEl.value === value)?.lastText;
 }
 
@@ -421,35 +434,35 @@ describe('FokusFirstSettingTab — quadrant tag onChange', () => {
 	it('saves the "do" tag', async () => {
 		const { plugin } = makeTabWithDisplay();
 		await textByValue('#do')?.simulate('#jetzt');
-		expect(plugin.settings.quadrantTags.do).toBe('#jetzt');
+		expect(plugin.settings.quadrants.do.tag).toBe('#jetzt');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('saves the "schedule" tag', async () => {
 		const { plugin } = makeTabWithDisplay();
 		await textByValue('#schedule')?.simulate('#bald');
-		expect(plugin.settings.quadrantTags.schedule).toBe('#bald');
+		expect(plugin.settings.quadrants.schedule.tag).toBe('#bald');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('saves the "delegate" tag', async () => {
 		const { plugin } = makeTabWithDisplay();
 		await textByValue('#delegate')?.simulate('#delegieren');
-		expect(plugin.settings.quadrantTags.delegate).toBe('#delegieren');
+		expect(plugin.settings.quadrants.delegate.tag).toBe('#delegieren');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('saves the "eliminate" tag', async () => {
 		const { plugin } = makeTabWithDisplay();
 		await textByValue('#eliminate')?.simulate('#irgendwann');
-		expect(plugin.settings.quadrantTags.eliminate).toBe('#irgendwann');
+		expect(plugin.settings.quadrants.eliminate.tag).toBe('#irgendwann');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('trims whitespace from the saved tag value', async () => {
 		const { plugin } = makeTabWithDisplay();
 		await textByValue('#do')?.simulate('  #clean  ');
-		expect(plugin.settings.quadrantTags.do).toBe('#clean');
+		expect(plugin.settings.quadrants.do.tag).toBe('#clean');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 });

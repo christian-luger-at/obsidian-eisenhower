@@ -48,8 +48,23 @@ interface Translations {
 		matrixHeading: string;
 		urgencyDays: { name: string; desc: string; error: string };
 		importantPriorities: { name: string; desc: string; error: string };
-		quadrantTagsHeading: string;
+		quadrantsHeading: string;
 		quadrantTagsDesc: string;
+		quadrantColor: string;
+		quadrantTag: string;
+		groupByPrimary: { name: string; desc: string };
+		sortPrimary: string;
+		sortSecondary: string;
+		sortField: { priority: string; dueDate: string; alpha: string };
+	};
+	groups: {
+		noPriority: string;
+		overdue: string;
+		today: string;
+		thisWeek: string;
+		upcoming: string;
+		later: string;
+		noDate: string;
 	};
 }
 
@@ -115,8 +130,26 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Tasks carrying any of the selected priority levels are placed in the "Important" axis of the matrix. Select at least one.',
 				error: 'At least one priority must be selected.',
 			},
-			quadrantTagsHeading: 'Manual Quadrant Assignment',
+			quadrantsHeading: 'Quadrants',
 			quadrantTagsDesc: 'Add one of these tags to any task to pin it to a specific quadrant, overriding the automatic classification.',
+			quadrantColor: 'Color',
+			quadrantTag: 'Tag (manual override)',
+			groupByPrimary: {
+				name: 'Group by primary criterion',
+				desc: 'When enabled, tasks in each quadrant are visually grouped by their primary sort field.',
+			},
+			sortPrimary: 'Primary sort',
+			sortSecondary: 'Secondary sort',
+			sortField: { priority: 'Priority', dueDate: 'Due date', alpha: 'Alphabetical' },
+		},
+		groups: {
+			noPriority: 'No priority',
+			overdue: 'Overdue',
+			today: 'Today',
+			thisWeek: 'This week',
+			upcoming: 'Next 14 days',
+			later: 'Later',
+			noDate: 'No due date',
 		},
 	},
 	de: {
@@ -180,8 +213,26 @@ const translations: Record<Lang, Translations> = {
 				desc: 'Aufgaben mit einer der gewählten Prioritätsstufen werden auf der „Wichtig"-Achse der Matrix eingeordnet. Mindestens eine Priorität muss ausgewählt sein.',
 				error: 'Es muss mindestens eine Priorität ausgewählt sein.',
 			},
-			quadrantTagsHeading: 'Manuelle Quadranten-Zuweisung',
+			quadrantsHeading: 'Quadranten',
 			quadrantTagsDesc: 'Füge einer Aufgabe einen dieser Tags hinzu, um sie einem bestimmten Quadranten zuzuweisen. Dieser Tag überschreibt die automatische Klassifizierung.',
+			quadrantColor: 'Farbe',
+			quadrantTag: 'Tag (manuelle Zuweisung)',
+			groupByPrimary: {
+				name: 'Nach erstem Kriterium gruppieren',
+				desc: 'Wenn aktiviert, werden Aufgaben in jedem Quadranten nach dem primären Sortierfeld visuell gruppiert.',
+			},
+			sortPrimary: 'Primäre Sortierung',
+			sortSecondary: 'Sekundäre Sortierung',
+			sortField: { priority: 'Priorität', dueDate: 'Fälligkeitsdatum', alpha: 'Alphabetisch' },
+		},
+		groups: {
+			noPriority: 'Keine Priorität',
+			overdue: 'Überfällig',
+			today: 'Heute',
+			thisWeek: 'Diese Woche',
+			upcoming: 'Nächste 14 Tage',
+			later: 'Später',
+			noDate: 'Kein Datum',
 		},
 	},
 };
