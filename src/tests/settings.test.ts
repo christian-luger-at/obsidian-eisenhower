@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DEFAULT_SETTINGS, FokusFirstSettings, TaskScope, Priority } from '../settings';
 import type { FokusFirstSettingTab as FokusFirstSettingTabType } from '../settings';
 import { createdSettings, clearCreatedSettings } from './__mocks__/obsidian';
-import type { DropdownComponent, TextComponent } from './__mocks__/obsidian';
+import type { DropdownComponent, TextComponent, ToggleComponent } from './__mocks__/obsidian';
 
 // ---------------------------------------------------------------------------
 // Unit tests — DEFAULT_SETTINGS
@@ -337,6 +337,16 @@ function textByValue(value: string): TextComponent | undefined {
 	return createdSettings.find((s) => s.lastText?.inputEl.value === value)?.lastText;
 }
 
+// Find a dropdown by its setting name
+function dropdownByName(name: string): DropdownComponent | undefined {
+	return createdSettings.find((s) => s.name === name && s.lastDropdown)?.lastDropdown;
+}
+
+// Find a toggle by its setting name
+function toggleByName(name: string): ToggleComponent | undefined {
+	return createdSettings.find((s) => s.name === name && s.lastToggle)?.lastToggle;
+}
+
 // ---------------------------------------------------------------------------
 // onChange — scope dropdown
 // ---------------------------------------------------------------------------
@@ -465,5 +475,198 @@ describe('FokusFirstSettingTab — quadrant tag onChange', () => {
 		await textByValue('#do')?.simulate('  #clean  ');
 		expect(plugin.settings.quadrants.do.tag).toBe('#clean');
 		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — focusTag default
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — focusTag', () => {
+	it('defaults to "#focus"', () => {
+		expect(DEFAULT_SETTINGS.focusTag).toBe('#focus');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — groupByPrimary default
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — groupByPrimary', () => {
+	it('defaults to false', () => {
+		expect(DEFAULT_SETTINGS.groupByPrimary).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — quadrant defaults
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — quadrant structure', () => {
+	it('has all four quadrants', () => {
+		const keys = Object.keys(DEFAULT_SETTINGS.quadrants);
+		expect(keys).toEqual(expect.arrayContaining(['do', 'schedule', 'delegate', 'eliminate']));
+		expect(keys).toHaveLength(4);
+	});
+
+	it('each quadrant has tag, color, and sort fields', () => {
+		for (const key of ['do', 'schedule', 'delegate', 'eliminate'] as const) {
+			const q = DEFAULT_SETTINGS.quadrants[key];
+			expect(typeof q.tag).toBe('string');
+			expect(typeof q.color).toBe('string');
+			expect(typeof q.sort.primary).toBe('string');
+			expect(typeof q.sort.secondary).toBe('string');
+		}
+	});
+
+	it('default tags match quadrant keys prefixed with #', () => {
+		expect(DEFAULT_SETTINGS.quadrants.do.tag).toBe('#do');
+		expect(DEFAULT_SETTINGS.quadrants.schedule.tag).toBe('#schedule');
+		expect(DEFAULT_SETTINGS.quadrants.delegate.tag).toBe('#delegate');
+		expect(DEFAULT_SETTINGS.quadrants.eliminate.tag).toBe('#eliminate');
+	});
+
+	it('default colors are valid hex strings', () => {
+		const hexColor = /^#[0-9a-f]{6}$/i;
+		for (const key of ['do', 'schedule', 'delegate', 'eliminate'] as const) {
+			expect(DEFAULT_SETTINGS.quadrants[key].color).toMatch(hexColor);
+		}
+	});
+
+	it('"do" quadrant defaults to red (#e03131)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.do.color).toBe('#e03131');
+	});
+
+	it('"schedule" quadrant defaults to blue (#1971c2)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.schedule.color).toBe('#1971c2');
+	});
+
+	it('"do" quadrant sorts by priority first, then dueDate', () => {
+		expect(DEFAULT_SETTINGS.quadrants.do.sort.primary).toBe('priority');
+		expect(DEFAULT_SETTINGS.quadrants.do.sort.secondary).toBe('dueDate');
+	});
+
+	it('"schedule" quadrant sorts by dueDate first, then priority', () => {
+		expect(DEFAULT_SETTINGS.quadrants.schedule.sort.primary).toBe('dueDate');
+		expect(DEFAULT_SETTINGS.quadrants.schedule.sort.secondary).toBe('priority');
+	});
+
+	it('"delegate" quadrant sorts by dueDate first, then priority', () => {
+		expect(DEFAULT_SETTINGS.quadrants.delegate.sort.primary).toBe('dueDate');
+		expect(DEFAULT_SETTINGS.quadrants.delegate.sort.secondary).toBe('priority');
+	});
+
+	it('"eliminate" quadrant sorts by priority first, then alphabetically', () => {
+		expect(DEFAULT_SETTINGS.quadrants.eliminate.sort.primary).toBe('priority');
+		expect(DEFAULT_SETTINGS.quadrants.eliminate.sort.secondary).toBe('alpha');
+	});
+
+	it('primary and secondary sort defaults are different for every quadrant', () => {
+		for (const key of ['do', 'schedule', 'delegate', 'eliminate'] as const) {
+			const { primary, secondary } = DEFAULT_SETTINGS.quadrants[key].sort;
+			expect(primary).not.toBe(secondary);
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — focusTag text input
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — focusTag onChange', () => {
+	it('saves a custom focus tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#focus')?.simulate('#star');
+		expect(plugin.settings.focusTag).toBe('#star');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves an empty string (disabling focus tag)', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#focus')?.simulate('');
+		expect(plugin.settings.focusTag).toBe('');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('trims whitespace from the saved focus tag', async () => {
+		const { plugin } = makeTabWithDisplay();
+		await textByValue('#focus')?.simulate('  #highlight  ');
+		expect(plugin.settings.focusTag).toBe('#highlight');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — groupByPrimary toggle
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — groupByPrimary toggle onChange', () => {
+	it('saves true when toggled on', async () => {
+		const { plugin } = makeTabWithDisplay({ groupByPrimary: false });
+		await toggleByName('Group by primary criterion')?.simulate(true);
+		expect(plugin.settings.groupByPrimary).toBe(true);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves false when toggled off', async () => {
+		const { plugin } = makeTabWithDisplay({ groupByPrimary: true });
+		await toggleByName('Group by primary criterion')?.simulate(false);
+		expect(plugin.settings.groupByPrimary).toBe(false);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('toggle reflects the current setting value', () => {
+		makeTabWithDisplay({ groupByPrimary: true });
+		const toggle = toggleByName('Group by primary criterion');
+		expect(toggle?.getValue()).toBe(true);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// onChange — sort dropdowns
+// ---------------------------------------------------------------------------
+
+describe('FokusFirstSettingTab — sort dropdowns onChange', () => {
+	it('saves primary sort for the "do" quadrant', async () => {
+		// display() creates the "do" quadrant first; its "Primary sort" dropdown is the first match
+		const { plugin } = makeTabWithDisplay();
+		const allPrimary = createdSettings.filter((s) => s.name === 'Primary sort' && s.lastDropdown);
+		await allPrimary[0]?.lastDropdown?.simulate('dueDate');
+		expect(plugin.settings.quadrants.do.sort.primary).toBe('dueDate');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves secondary sort for the "do" quadrant', async () => {
+		const { plugin } = makeTabWithDisplay();
+		const allSecondary = createdSettings.filter((s) => s.name === 'Secondary sort' && s.lastDropdown);
+		await allSecondary[0]?.lastDropdown?.simulate('alpha');
+		expect(plugin.settings.quadrants.do.sort.secondary).toBe('alpha');
+		expect(plugin.saveSettings).toHaveBeenCalled();
+	});
+
+	it('saves primary sort for the "schedule" quadrant independently', async () => {
+		const { plugin } = makeTabWithDisplay();
+		const allPrimary = createdSettings.filter((s) => s.name === 'Primary sort' && s.lastDropdown);
+		await allPrimary[1]?.lastDropdown?.simulate('alpha');
+		expect(plugin.settings.quadrants.schedule.sort.primary).toBe('alpha');
+		expect(plugin.settings.quadrants.do.sort.primary).toBe('priority'); // unchanged
+	});
+
+	it('primary and secondary dropdowns are independent', async () => {
+		const { plugin } = makeTabWithDisplay();
+		const allPrimary   = createdSettings.filter((s) => s.name === 'Primary sort'   && s.lastDropdown);
+		const allSecondary = createdSettings.filter((s) => s.name === 'Secondary sort' && s.lastDropdown);
+		await allPrimary[0]?.lastDropdown?.simulate('alpha');
+		await allSecondary[0]?.lastDropdown?.simulate('dueDate');
+		expect(plugin.settings.quadrants.do.sort.primary).toBe('alpha');
+		expect(plugin.settings.quadrants.do.sort.secondary).toBe('dueDate');
+	});
+
+	it('four quadrants each have a primary and secondary sort dropdown', () => {
+		makeTabWithDisplay();
+		const primaryCount   = createdSettings.filter((s) => s.name === 'Primary sort'   && s.lastDropdown).length;
+		const secondaryCount = createdSettings.filter((s) => s.name === 'Secondary sort' && s.lastDropdown).length;
+		expect(primaryCount).toBe(4);
+		expect(secondaryCount).toBe(4);
 	});
 });

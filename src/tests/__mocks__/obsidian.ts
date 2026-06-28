@@ -35,6 +35,7 @@ export class Setting {
 	name = '';
 	lastDropdown?: DropdownComponent;
 	lastText?: TextComponent;
+	lastToggle?: ToggleComponent;
 
 	constructor(_containerEl: unknown) {
 		createdSettings.push(this);
@@ -62,7 +63,8 @@ export class Setting {
 	}
 
 	addToggle(cb: (t: ToggleComponent) => void) {
-		cb(new ToggleComponent());
+		this.lastToggle = new ToggleComponent();
+		cb(this.lastToggle);
 		return this;
 	}
 }
