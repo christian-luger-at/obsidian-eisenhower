@@ -9,9 +9,21 @@ export class PluginSettingTab {
 }
 
 export class Setting {
-	private el: { children: unknown[] } = { children: [] };
+	private _mockEl = () => ({
+		createEl: (_tag: string, _o?: unknown) => ({
+			classList: { add: () => {}, toggle: () => {} },
+			addEventListener: () => {},
+			style: { display: '' },
+		}),
+		createDiv: (_o?: unknown) => this._mockEl(),
+		after: (_el: unknown) => {},
+		style: { display: '' },
+	});
+	settingEl = this._mockEl();
+	controlEl = this._mockEl();
 	setName(_v: string) { return this; }
 	setDesc(_v: string) { return this; }
+	setHeading() { return this; }
 	addDropdown(cb: (d: DropdownComponent) => void) {
 		cb(new DropdownComponent());
 		return this;
@@ -20,6 +32,34 @@ export class Setting {
 		cb(new TextComponent());
 		return this;
 	}
+	addSlider(cb: (s: SliderComponent) => void) {
+		cb(new SliderComponent());
+		return this;
+	}
+	addToggle(cb: (t: ToggleComponent) => void) {
+		cb(new ToggleComponent());
+		return this;
+	}
+}
+
+export class SliderComponent {
+	private _value = 0;
+	private _onChange?: (v: number) => void;
+	setLimits(_min: number, _max: number, _step: number) { return this; }
+	setValue(v: number) { this._value = v; return this; }
+	getValue() { return this._value; }
+	setDynamicTooltip() { return this; }
+	onChange(cb: (v: number) => void) { this._onChange = cb; return this; }
+	simulate(v: number) { this._value = v; this._onChange?.(v); }
+}
+
+export class ToggleComponent {
+	private _value = false;
+	private _onChange?: (v: boolean) => void;
+	setValue(v: boolean) { this._value = v; return this; }
+	getValue() { return this._value; }
+	onChange(cb: (v: boolean) => void) { this._onChange = cb; return this; }
+	simulate(v: boolean) { this._value = v; this._onChange?.(v); }
 }
 
 export class DropdownComponent {
@@ -34,7 +74,11 @@ export class DropdownComponent {
 }
 
 export class TextComponent {
-	inputEl = { value: '' } as HTMLInputElement;
+	inputEl = {
+		value: '',
+		classList: { toggle: () => {} },
+		setAttribute: (_k: string, _v: string) => {},
+	} as unknown as HTMLInputElement;
 	private _onChange?: (v: string) => void;
 	setPlaceholder(_v: string) { return this; }
 	setValue(v: string) { this.inputEl.value = v; return this; }

@@ -1,8 +1,45 @@
-/*
+.focus-first-hidden {
+	display: none;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.focus-first-setting-error {
+	color: var(--color-red);
+	font-size: var(--font-smaller);
+	background: transparent;
+	margin: -8px 0 4px;
+	padding: 0 var(--size-4-4);
+}
 
-If your plugin does not need CSS, delete this file.
+input.is-invalid {
+	border-color: var(--color-red) !important;
+}
 
-*/
+.focus-first-pill-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+	justify-content: flex-end;
+}
+
+.focus-first-pill {
+	padding: 2px var(--size-2-3);
+	border-radius: var(--radius-l);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: var(--font-smaller);
+	white-space: nowrap;
+	transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+
+.focus-first-pill:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.focus-first-pill.is-active {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
