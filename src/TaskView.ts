@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Menu, setIcon, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, TFile, setIcon, debounce } from 'obsidian';
 import FocusFirstPlugin from './main';
 import { scanTasks, TaskItem } from './taskScanner';
 import { classifyTasks, MatrixTask, Quadrant } from './matrixClassifier';
@@ -185,15 +185,15 @@ export class FocusFirstView extends ItemView {
 			const li = list.createEl('li', { cls: 'focus-first-focus-item' });
 			li.createEl('span', { text, cls: 'focus-first-focus-item-text' });
 			const actions = li.createDiv({ cls: 'focus-first-focus-actions' });
-			const doneBtn = actions.createEl('button', { cls: 'focus-first-focus-done', text: '✓' });
+			const doneBtn = actions.createEl('button', { cls: 'focus-first-task-btn' });
+			setIcon(doneBtn, 'check');
 			doneBtn.setAttribute('aria-label', String(t().view.focusDone));
-			doneBtn.setAttribute('title', String(t().view.focusDone));
 			doneBtn.addEventListener('click', () => {
 				void this.completeTask(task.file.path, task.lineNumber);
 			});
-			const removeBtn = actions.createEl('button', { cls: 'focus-first-focus-remove', text: '✕' });
+			const removeBtn = actions.createEl('button', { cls: 'focus-first-task-btn' });
+			setIcon(removeBtn, 'star-off');
 			removeBtn.setAttribute('aria-label', String(t().view.focusRemove));
-			removeBtn.setAttribute('title', String(t().view.focusRemove));
 			removeBtn.addEventListener('click', () => {
 				void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, false);
 			});
@@ -258,8 +258,9 @@ export class FocusFirstView extends ItemView {
 			cell.setCssProps({ '--quadrant-color': this.plugin.settings.quadrants[key].color });
 			this.makeDropTarget(cell, key);
 			const cellHeader = cell.createDiv({ cls: 'focus-first-quadrant-header' });
-			cellHeader.createEl('span', { text: quadrant.title, cls: 'focus-first-quadrant-title' });
-			cellHeader.createEl('span', { text: quadrant.subtitle, cls: 'focus-first-quadrant-subtitle' });
+			const badge = cellHeader.createEl('span', { cls: 'focus-first-quadrant-badge' });
+			badge.createEl('span', { text: quadrant.title, cls: 'focus-first-quadrant-title' });
+			badge.createEl('span', { text: quadrant.subtitle, cls: 'focus-first-quadrant-subtitle' });
 			cellHeader.createEl('span', { text: String(tasks.length), cls: 'focus-first-quadrant-count' });
 
 			if (tasks.length === 0) {
@@ -298,42 +299,23 @@ export class FocusFirstView extends ItemView {
 		const li = parent.createEl('li', { cls: `focus-first-task-item${isFocused ? ' is-focused' : ''}` });
 		this.makeDraggable(li, task);
 
-		const text = task.line.replace(/^[\s\-*]*\[.\]\s*/, '').replace(/(🔺|⏫|🔼|🔽|⏬)\s*/g, '').replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '').trim();
+		const text = task.line
+			.replace(/^[\s\-*]*\[.\]\s*/, '')
+			.replace(/(🔺|⏫|🔼|🔽|⏬)\s*/g, '')
+			.replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '')
+			.replace(/#\S+/g, '')
+			.trim();
 
-		li.addEventListener('contextmenu', (e) => {
-			const menu = new Menu();
-			menu.addItem((item) =>
-				item.setTitle(String(t().view.focusDone)).setIcon('check').onClick(() => {
-					void this.completeTask(task.file.path, task.lineNumber);
-				}),
-			);
-			if (focusTag) {
-				const labelRemove = String(t().view.focusRemove);
-				const labelAdd = String(t().view.focusAdd);
-				menu.addSeparator();
-				if (isFocused) {
-					menu.addItem((item) =>
-						item.setTitle(labelRemove).setIcon('star-off').onClick(() => {
-							void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, false);
-						}),
-					);
-				} else {
-					menu.addItem((item) =>
-						item.setTitle(labelAdd).setIcon('star').onClick(() => {
-							void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, true);
-						}),
-					);
-				}
-			}
-			menu.showAtMouseEvent(e);
-		});
-
-		const info = li.createDiv({ cls: 'focus-first-task-info' });
-		const titleEl = info.createEl('span', { text, cls: 'focus-first-task-text' });
+		// Title row — always visible
+		const titleEl = li.createEl('span', { text, cls: 'focus-first-task-text' });
 		titleEl.addEventListener('click', () => { void this.openTask(task); });
 
-		const meta = info.createEl('span', { cls: 'focus-first-task-meta' });
-		if (task.manual) meta.createEl('span', { text: '📌', cls: 'focus-first-task-pinned', attr: { title: t().view.manualTag } });
+		// Hover panel — visible only on hover via CSS
+		const hover = li.createDiv({ cls: 'focus-first-task-hover' });
+		const hoverInner = hover.createDiv({ cls: 'focus-first-task-hover-inner' });
+
+		// Meta row inside hover panel
+		const meta = hoverInner.createDiv({ cls: 'focus-first-task-meta' });
 		if (task.priority) meta.createEl('span', { text: task.priority, cls: 'focus-first-task-priority' });
 		if (task.dueDate) {
 			meta.createEl('span', {
@@ -341,7 +323,33 @@ export class FocusFirstView extends ItemView {
 				cls: 'focus-first-task-due',
 			});
 		}
+		for (const tag of task.tags) {
+			meta.createEl('span', { text: tag, cls: 'focus-first-task-tag' });
+		}
 		meta.createEl('span', { text: task.file.basename, cls: 'focus-first-task-source' });
+
+		// Action buttons inside hover panel
+		const actions = hoverInner.createDiv({ cls: 'focus-first-task-actions' });
+
+		const doneBtn = actions.createEl('button', { cls: 'focus-first-task-btn' });
+		setIcon(doneBtn, 'check');
+		doneBtn.setAttribute('aria-label', String(t().view.focusDone));
+		doneBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			void this.completeTask(task.file.path, task.lineNumber);
+		});
+
+		if (focusTag) {
+			const focusBtn = actions.createEl('button', {
+				cls: `focus-first-task-btn${isFocused ? ' is-active' : ''}`,
+			});
+			setIcon(focusBtn, 'star');
+			focusBtn.setAttribute('aria-label', String(isFocused ? t().view.focusRemove : t().view.focusAdd));
+			focusBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				void this.toggleFocusTag(task.file.path, task.lineNumber, focusTag, !isFocused);
+			});
+		}
 	}
 
 	private static readonly PRIORITY_ORDER = ['🔺', '⏫', '🔼', '🔽', '⏬'];
@@ -441,7 +449,9 @@ export class FocusFirstView extends ItemView {
 	}
 
 	private renderTaskGroup(list: HTMLElement, label: string, tasks: MatrixTask[]): void {
-		list.createEl('li', { text: label, cls: 'focus-first-group-header' });
+		const header = list.createEl('li', { cls: 'focus-first-group-header' });
+		header.createEl('span', { text: label, cls: 'focus-first-group-header-label' });
+		header.createEl('span', { cls: 'focus-first-group-header-line' });
 		for (const task of tasks) {
 			this.renderTask(list, task);
 		}

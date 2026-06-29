@@ -533,12 +533,32 @@ describe('DEFAULT_SETTINGS — quadrant structure', () => {
 		}
 	});
 
-	it('"do" quadrant defaults to red (#e03131)', () => {
-		expect(DEFAULT_SETTINGS.quadrants.do.color).toBe('#e03131');
+	it('"do" quadrant defaults to red (#c92a2a)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.do.color).toBe('#c92a2a');
 	});
 
-	it('"schedule" quadrant defaults to blue (#1971c2)', () => {
-		expect(DEFAULT_SETTINGS.quadrants.schedule.color).toBe('#1971c2');
+	it('"schedule" quadrant defaults to blue (#1864ab)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.schedule.color).toBe('#1864ab');
+	});
+
+	it('"delegate" quadrant defaults to amber (#e67700)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.delegate.color).toBe('#e67700');
+	});
+
+	it('"eliminate" quadrant defaults to dark gray (#495057)', () => {
+		expect(DEFAULT_SETTINGS.quadrants.eliminate.color).toBe('#495057');
+	});
+
+	it('all quadrant colors are distinct', () => {
+		const colors = Object.values(DEFAULT_SETTINGS.quadrants).map((q) => q.color);
+		const unique = new Set(colors);
+		expect(unique.size).toBe(colors.length);
+	});
+
+	it('all quadrant colors are valid hex values', () => {
+		for (const key of ['do', 'schedule', 'delegate', 'eliminate'] as const) {
+			expect(DEFAULT_SETTINGS.quadrants[key].color).toMatch(/^#[0-9a-f]{6}$/i);
+		}
 	});
 
 	it('"do" quadrant sorts by priority first, then dueDate', () => {
@@ -668,5 +688,98 @@ describe('FokusFirstSettingTab — sort dropdowns onChange', () => {
 		const secondaryCount = createdSettings.filter((s) => s.name === 'Secondary sort' && s.lastDropdown).length;
 		expect(primaryCount).toBe(4);
 		expect(secondaryCount).toBe(4);
+	});
+
+	it('saves sort for "delegate" quadrant independently', async () => {
+		const { plugin } = makeTabWithDisplay();
+		const allPrimary = createdSettings.filter((s) => s.name === 'Primary sort' && s.lastDropdown);
+		await allPrimary[2]?.lastDropdown?.simulate('priority');
+		expect(plugin.settings.quadrants.delegate.sort.primary).toBe('priority');
+		expect(plugin.settings.quadrants.do.sort.primary).toBe('priority'); // unchanged
+		expect(plugin.settings.quadrants.schedule.sort.primary).toBe('dueDate'); // unchanged
+	});
+
+	it('saves sort for "eliminate" quadrant independently', async () => {
+		const { plugin } = makeTabWithDisplay();
+		const allSecondary = createdSettings.filter((s) => s.name === 'Secondary sort' && s.lastDropdown);
+		await allSecondary[3]?.lastDropdown?.simulate('dueDate');
+		expect(plugin.settings.quadrants.eliminate.sort.secondary).toBe('dueDate');
+		expect(plugin.settings.quadrants.do.sort.secondary).toBe('dueDate'); // unchanged
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — DEFAULT_SETTINGS importantPriorities
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — importantPriorities', () => {
+	it('defaults to highest and high priority', () => {
+		expect(DEFAULT_SETTINGS.importantPriorities).toEqual(['🔺', '⏫']);
+	});
+
+	it('contains only valid priority emoji', () => {
+		const valid = new Set(['🔺', '⏫', '🔼', '🔽', '⏬']);
+		for (const p of DEFAULT_SETTINGS.importantPriorities) {
+			expect(valid.has(p as Priority)).toBe(true);
+		}
+	});
+
+	it('has no duplicates', () => {
+		const set = new Set(DEFAULT_SETTINGS.importantPriorities);
+		expect(set.size).toBe(DEFAULT_SETTINGS.importantPriorities.length);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — DEFAULT_SETTINGS shape completeness
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — shape completeness', () => {
+	it('has all required top-level keys', () => {
+		const keys: (keyof typeof DEFAULT_SETTINGS)[] = [
+			'taskScope', 'taskFolder', 'urgencyDays', 'importantPriorities',
+			'quadrants', 'groupByPrimary', 'focusTag',
+		];
+		for (const key of keys) {
+			expect(DEFAULT_SETTINGS).toHaveProperty(key);
+		}
+	});
+
+	it('urgencyDays is a non-negative integer', () => {
+		expect(Number.isInteger(DEFAULT_SETTINGS.urgencyDays)).toBe(true);
+		expect(DEFAULT_SETTINGS.urgencyDays).toBeGreaterThanOrEqual(0);
+	});
+
+	it('focusTag starts with #', () => {
+		expect(DEFAULT_SETTINGS.focusTag.startsWith('#')).toBe(true);
+	});
+
+	it('all quadrant tags start with #', () => {
+		for (const key of ['do', 'schedule', 'delegate', 'eliminate'] as const) {
+			expect(DEFAULT_SETTINGS.quadrants[key].tag.startsWith('#')).toBe(true);
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Integration — color default values per quadrant
+// ---------------------------------------------------------------------------
+
+describe('DEFAULT_SETTINGS — quadrant color semantics', () => {
+	it('"do" is redder than "schedule"', () => {
+		const doRed   = parseInt(DEFAULT_SETTINGS.quadrants.do.color.slice(1, 3), 16);
+		const schedRed = parseInt(DEFAULT_SETTINGS.quadrants.schedule.color.slice(1, 3), 16);
+		expect(doRed).toBeGreaterThan(schedRed);
+	});
+
+	it('"eliminate" color has equal or lower saturation than others (darkish gray)', () => {
+		const hex = DEFAULT_SETTINGS.quadrants.eliminate.color;
+		const r = parseInt(hex.slice(1, 3), 16);
+		const g = parseInt(hex.slice(3, 5), 16);
+		const b = parseInt(hex.slice(5, 7), 16);
+		const max = Math.max(r, g, b);
+		const min = Math.min(r, g, b);
+		const saturation = max === 0 ? 0 : (max - min) / max;
+		expect(saturation).toBeLessThan(0.3);
 	});
 });

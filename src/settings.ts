@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFolder, AbstractInputSuggest } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFolder, AbstractInputSuggest, setIcon } from 'obsidian';
 import FokusFirstPlugin from './main';
 import { t } from './i18n';
 
@@ -53,10 +53,10 @@ export const DEFAULT_SETTINGS: FokusFirstSettings = {
 	urgencyDays: 3,
 	importantPriorities: ['🔺', '⏫'],
 	quadrants: {
-		do:       { tag: '#do',       color: '#e03131', sort: { primary: 'priority', secondary: 'dueDate' } },
-		schedule: { tag: '#schedule', color: '#1971c2', sort: { primary: 'dueDate',  secondary: 'priority' } },
-		delegate: { tag: '#delegate', color: '#e8590c', sort: { primary: 'dueDate',  secondary: 'priority' } },
-		eliminate:{ tag: '#eliminate',color: '#868e96', sort: { primary: 'priority', secondary: 'alpha'    } },
+		do:       { tag: '#do',       color: '#c92a2a', sort: { primary: 'priority', secondary: 'dueDate' } },
+		schedule: { tag: '#schedule', color: '#1864ab', sort: { primary: 'dueDate',  secondary: 'priority' } },
+		delegate: { tag: '#delegate', color: '#e67700', sort: { primary: 'dueDate',  secondary: 'priority' } },
+		eliminate:{ tag: '#eliminate',color: '#495057', sort: { primary: 'priority', secondary: 'alpha'    } },
 	},
 	groupByPrimary: false,
 	focusTag: '#focus',
@@ -287,6 +287,20 @@ export class FokusFirstSettingTab extends PluginSettingTab {
 						this.plugin.settings.quadrants[def.key].color = text.inputEl.value;
 						void this.plugin.saveSettings();
 					});
+
+					const resetBtn = text.inputEl.parentElement?.createEl('button', {
+						cls: 'focus-first-color-reset',
+						attr: { title: t().settings.quadrantColor.reset, type: 'button' },
+					});
+					if (resetBtn) {
+						setIcon(resetBtn, 'rotate-ccw');
+						resetBtn.addEventListener('click', () => {
+							const defaultColor = DEFAULT_SETTINGS.quadrants[def.key].color;
+							this.plugin.settings.quadrants[def.key].color = defaultColor;
+							text.inputEl.value = defaultColor;
+							void this.plugin.saveSettings();
+						});
+					}
 				});
 
 			new Setting(containerEl)

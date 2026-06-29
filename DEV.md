@@ -114,7 +114,7 @@ src/
 ## Build commands
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `npm run dev` | Watch mode for development (esbuild recompiles on changes) |
 | `npm run build` | Production build with TypeScript type check and minification |
 | `npm run lint` | Run ESLint with Obsidian-specific rules |
@@ -142,7 +142,7 @@ The coverage report shows statement, branch, function, and line coverage for all
 ### What is tested
 
 | File | Scope | What is covered |
-|---|---|---|
+| --- | --- | --- |
 | `settings.test.ts` | Unit | `DEFAULT_SETTINGS` values and type contract |
 | `settings.test.ts` | Integration | `FokusFirstSettingTab` renders without errors for both scope options |
 | `settings.test.ts` | Integration | `onChange` callbacks for scope dropdown, folder input, urgency days, and quadrant tags |
@@ -162,16 +162,47 @@ The coverage report shows statement, branch, function, and line coverage for all
 
 ## Build production release
 
-When the plugin is ready:
+### 1. Bump the version
+
+The version number lives in two places: `manifest.json` and `package.json`. Update both manually, then commit:
 
 ```bash
-npm run build
+# Edit version in manifest.json and package.json (e.g. 1.0.0 → 1.1.0)
+git add manifest.json package.json
+git commit -m "chore: bump version to 1.1.0"
+git push
 ```
 
-This creates the optimized `main.js`. Then:
+### 2. Build and package
 
-1. Copy `main.js`, `manifest.json`, and optionally `styles.css` into a release directory
-2. Create a GitHub release with these files as artifacts
+Run the release script — it runs all tests, builds the production bundle, and copies the three required files into `releases/v<version>/`:
+
+```bash
+npm run release
+```
+
+Output: `releases/v1.1.0/` containing `main.js`, `manifest.json`, `styles.css`.
+
+### 3. Create a GitHub release
+
+```bash
+# Create a git tag matching the version
+git tag v1.1.0
+git push origin v1.1.0
+
+# Create the GitHub release and attach the three plugin files
+gh release create v1.1.0 \
+  releases/v1.1.0/main.js \
+  releases/v1.1.0/manifest.json \
+  releases/v1.1.0/styles.css \
+  --title "v1.1.0" \
+  --notes "Release notes here"
+```
+
+The release is now visible on GitHub with the three files as downloadable artifacts.
+
+> [!tip]
+> To install the release in Obsidian manually: download all three files and place them in `.obsidian/plugins/focus-first-matrix/` inside your vault.
 
 ## Additional resources
 

@@ -57,7 +57,7 @@ interface Translations {
 		focusTag: { name: string; desc: string };
 		matrixDesc: string;
 		quadrantsHeading: string;
-		quadrantColor: { name: string; desc: string };
+		quadrantColor: { name: string; desc: string; reset: string };
 		quadrantTag: { name: string; desc: string };
 		groupByPrimary: { name: string; desc: string };
 		sortPrimary: { name: string; desc: string };
@@ -152,6 +152,7 @@ const translations: Record<Lang, Translations> = {
 			quadrantColor: {
 				name: 'Color',
 				desc: 'Accent color shown at the top border of the quadrant.',
+				reset: 'Reset to default',
 			},
 			quadrantTag: {
 				name: 'Tag (manual override)',
@@ -257,6 +258,7 @@ const translations: Record<Lang, Translations> = {
 			quadrantColor: {
 				name: 'Farbe',
 				desc: 'Akzentfarbe des oberen Rahmens im Quadranten.',
+				reset: 'Auf Standard zurücksetzen',
 			},
 			quadrantTag: {
 				name: 'Tag (manuelle Zuweisung)',
