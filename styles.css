@@ -273,7 +273,7 @@
 .focus-first-quadrant--do,
 .focus-first-quadrant--schedule,
 .focus-first-quadrant--delegate,
-.focus-first-quadrant--eliminate { border-top: 3px solid transparent; }
+.focus-first-quadrant--eliminate { border-top: 3px solid var(--quadrant-color, transparent); }
 
 .focus-first-quadrant-header {
 	display: flex;
@@ -297,10 +297,13 @@
 
 .focus-first-quadrant-count {
 	font-size: var(--font-smallest);
-	color: var(--text-muted);
-	background: var(--background-secondary);
-	border-radius: var(--radius-s);
-	padding: 0 var(--size-2-2);
+	font-weight: var(--font-semibold);
+	color: var(--quadrant-color, var(--text-muted));
+	background: color-mix(in srgb, var(--quadrant-color, transparent) 12%, transparent);
+	border-radius: 999px;
+	padding: 1px var(--size-2-3);
+	min-width: 1.4em;
+	text-align: center;
 }
 
 .focus-first-quadrant-empty {
@@ -323,7 +326,7 @@
 
 .focus-first-task-item {
 	position: relative;
-	padding: var(--size-2-1) var(--size-4-2);
+	padding: var(--size-2-2) var(--size-4-2);
 	border-bottom: 1px solid var(--background-modifier-border-hover);
 }
 
@@ -339,7 +342,9 @@
 .focus-first-task-info {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: var(--size-2-1);
+	flex: 1;
+	min-width: 0;
 }
 
 .focus-first-task-text {
@@ -404,13 +409,24 @@
 	gap: var(--size-2-2);
 	align-items: center;
 	flex-wrap: wrap;
+	line-height: 1;
 }
 
 .focus-first-task-priority,
 .focus-first-task-due,
 .focus-first-task-source {
 	font-size: var(--font-smallest);
+	color: var(--text-faint);
+}
+
+.focus-first-task-due {
 	color: var(--text-muted);
+}
+
+.focus-first-task-source::before {
+	content: '·';
+	margin-right: var(--size-2-2);
+	color: var(--text-faint);
 }
 
 /* ── Settings ────────────────────────────────────────────── */

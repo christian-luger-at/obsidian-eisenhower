@@ -255,7 +255,7 @@ export class FocusFirstView extends ItemView {
 			const quadrant = t().view.quadrants[key];
 
 			const cell = matrix.createDiv({ cls: `focus-first-quadrant focus-first-quadrant--${key}` });
-			cell.style.borderTopColor = this.plugin.settings.quadrants[key].color;
+			cell.setCssProps({ '--quadrant-color': this.plugin.settings.quadrants[key].color });
 			this.makeDropTarget(cell, key);
 			const cellHeader = cell.createDiv({ cls: 'focus-first-quadrant-header' });
 			cellHeader.createEl('span', { text: quadrant.title, cls: 'focus-first-quadrant-title' });
@@ -302,9 +302,15 @@ export class FocusFirstView extends ItemView {
 
 		li.addEventListener('contextmenu', (e) => {
 			const menu = new Menu();
+			menu.addItem((item) =>
+				item.setTitle(String(t().view.focusDone)).setIcon('check').onClick(() => {
+					void this.completeTask(task.file.path, task.lineNumber);
+				}),
+			);
 			if (focusTag) {
 				const labelRemove = String(t().view.focusRemove);
 				const labelAdd = String(t().view.focusAdd);
+				menu.addSeparator();
 				if (isFocused) {
 					menu.addItem((item) =>
 						item.setTitle(labelRemove).setIcon('star-off').onClick(() => {
