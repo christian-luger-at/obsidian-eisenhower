@@ -164,7 +164,23 @@ The coverage report shows statement, branch, function, and line coverage for all
 
 ### 1. Bump the version
 
-The version number lives in two places: `manifest.json` and `package.json`. Update both manually, then commit:
+The version number lives in three places: `package.json`, `manifest.json`, and `versions.json`. You can bump it automatically or manually.
+
+#### Option A — automated (`--bump`)
+
+Pass `--bump patch|minor|major` to the release script (or use the matching npm shortcut). This runs `npm version <type>`, which bumps `package.json` and — via the existing `version-bump.mjs` hook — keeps `manifest.json` and `versions.json` in sync, then commits the result as `chore: bump version to vX.Y.Z`:
+
+```bash
+bash release.sh --bump patch   # 1.0.1 → 1.0.2 — bug fixes
+bash release.sh --bump minor   # 1.0.1 → 1.1.0 — new features, backwards compatible
+bash release.sh --bump major   # 1.0.1 → 2.0.0 — breaking changes
+```
+
+This requires a clean working tree (commit or stash any pending changes first). The script then continues straight into building (step 2). Combine with `--publish` (or use the `release:patch` / `release:minor` / `release:major` npm scripts below) to bump, build, and publish in one command.
+
+#### Option B — manual
+
+Update `manifest.json` and `package.json` by hand, then commit:
 
 ```bash
 # Edit version in manifest.json and package.json (e.g. 1.0.0 → 1.1.0)
@@ -185,6 +201,38 @@ Output: `releases/v1.1.0/` containing `main.js`, `manifest.json`, `styles.css`.
 
 ### 3. Create a GitHub release
 
+You have two options:
+
+#### Option A — automated (`--publish`)
+
+The release script can also tag, push, and publish the GitHub release for you. This is **optional**: omit `--publish` (or just run `npm run release`) to build locally only.
+
+```bash
+npm run release:publish
+# equivalent to: bash release.sh --publish
+
+# with custom release notes:
+bash release.sh --publish --notes "Adds collapsible settings sections"
+```
+
+To bump the version, build, and publish in a single command, use the combined shortcuts (these chain `--bump <type> --publish`):
+
+```bash
+npm run release:patch   # bug fixes
+npm run release:minor   # new features
+npm run release:major   # breaking changes
+```
+
+Before publishing, the script checks that:
+
+- the [GitHub CLI](https://cli.github.com/) (`gh`) is installed and authenticated (`gh auth login`)
+- the working tree is clean (the version-bump commit from step 1 must already be in place)
+- the tag `v<version>` doesn't already exist
+
+It then asks for confirmation (`Publish vX.Y.Z to GitHub? [y/N]`) before pushing the tag and creating the release — nothing is pushed without that confirmation, even with `--publish` set.
+
+#### Option B — manual
+
 ```bash
 # Create a git tag matching the version
 git tag v1.0.0
@@ -199,7 +247,7 @@ gh release create v1.0.0 \
   --notes "Initial release with a basic implementation"
 ```
 
-The release is now visible on GitHub with the three files as downloadable artifacts.
+Either way, the release is now visible on GitHub with the three files as downloadable artifacts.
 
 > [!tip]
 > To install the release in Obsidian manually: download all three files and place them in `.obsidian/plugins/focus-first-matrix/` inside your vault.
